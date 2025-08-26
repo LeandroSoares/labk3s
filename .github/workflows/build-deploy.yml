@@ -1,0 +1,129 @@
+name: Build and Deploy Joke App
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/**'
+      - '.github/workflows/build-deploy.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/**'
+  # Permite execução manual do workflow
+  workflow_dispatch:
+
+env:
+  VERSION: ${{ github.sha }}
+
+jobs:
+  build-frontend:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Build and push Frontend
+        uses: docker/build-push-action@v4
+        with:
+          context: ./src/frontend
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/joke-frontend:${{ env.VERSION }},${{ secrets.DOCKERHUB_USERNAME }}/joke-frontend:latest
+          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/joke-frontend:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/joke-frontend:buildcache,mode=max
+
+  build-backend:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Build and push Backend
+        uses: docker/build-push-action@v4
+        with:
+          context: ./src/backend
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/joke-backend:${{ env.VERSION }},${{ secrets.DOCKERHUB_USERNAME }}/joke-backend:latest
+          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/joke-backend:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/joke-backend:buildcache,mode=max
+
+  # Preparação para deploy
+  prepare-manifests:
+    needs: [build-frontend, build-backend]
+    runs-on: ubuntu-latest
+    environment: production
+    if: github.ref == 'refs/heads/main' # Executa apenas no branch main
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Kustomize
+        uses: imranismail/setup-kustomize@v1
+
+      - name: Update Kubernetes manifests
+        run: |
+          # Substitui as variáveis nos arquivos YAML
+          sed -i "s|\${DOCKER_USERNAME}|${{ secrets.DOCKERHUB_USERNAME }}|g" ./k8s/app/frontend.yaml
+          sed -i "s|\${VERSION}|${{ env.VERSION }}|g" ./k8s/app/frontend.yaml
+          sed -i "s|\${DOCKER_USERNAME}|${{ secrets.DOCKERHUB_USERNAME }}|g" ./k8s/app/backend.yaml
+          sed -i "s|\${VERSION}|${{ env.VERSION }}|g" ./k8s/app/backend.yaml
+
+      - name: Commit and push updated manifests
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "ci: Update Kubernetes manifests with new image versions"
+          file_pattern: k8s/app/*.yaml
+
+  # Deploy para o Kubernetes
+  deploy:
+    needs: [prepare-manifests]
+    runs-on: ubuntu-latest
+    environment: production
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v1
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl apply -f k8s/app/namespace.yaml
+          kubectl apply -f k8s/app/backend.yaml
+          kubectl apply -f k8s/app/frontend.yaml
+          kubectl apply -f k8s/app/ingress.yaml
+          
+          # Verificar status do deployment
+          echo "Aguardando deployments..."
+          kubectl rollout status deployment/backend -n joke-app --timeout=180s
+          kubectl rollout status deployment/frontend -n joke-app --timeout=180s
+          
+          echo "Aplicação implantada com sucesso em www.labk3s.online"
+  #         kubectl apply -f k8s/app/

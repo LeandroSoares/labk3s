@@ -46,19 +46,11 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ secrets.DOCKERHUB_USERNAME }}/joke-frontend:${{ env.VERSION }}
-          format: 'sarif'
-          output: 'trivy-results-frontend.sarif'
+          format: 'table'
           exit-code: '0'  # Não falha a pipeline, apenas reporta
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
-          
-      - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: 'trivy-results-frontend.sarif'
-          category: 'frontend-vulnerabilities'
 
   build-backend:
     runs-on: ubuntu-latest
@@ -89,48 +81,17 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ secrets.DOCKERHUB_USERNAME }}/joke-backend:${{ env.VERSION }}
-          format: 'sarif'
-          output: 'trivy-results-backend.sarif'
+          format: 'table'
           exit-code: '0'  # Não falha a pipeline, apenas reporta
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
-          
-      - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: 'trivy-results-backend.sarif'
-          category: 'backend-vulnerabilities'
 
-  # Gerar relatório de segurança
-  security-report:
-    needs: [build-frontend, build-backend]
-    runs-on: ubuntu-latest
-    if: always()
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        
-      - name: Generate Security Report
-        run: |
-          echo "## 🔒 Relatório de Segurança das Imagens Docker" > security-report.md
-          echo "### ⚠️ Este relatório mostra as vulnerabilidades encontradas nas imagens de contêiner" >> security-report.md
-          echo "#### Imagens analisadas:" >> security-report.md
-          echo "- Frontend: \`${{ secrets.DOCKERHUB_USERNAME }}/joke-frontend:${{ env.VERSION }}\`" >> security-report.md
-          echo "- Backend: \`${{ secrets.DOCKERHUB_USERNAME }}/joke-backend:${{ env.VERSION }}\`" >> security-report.md
-          echo "" >> security-report.md
-          echo "Para ver detalhes completos, verifique a aba 'Security' do repositório." >> security-report.md
-          
-      - name: Upload Security Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: security-report
-          path: security-report.md
+
 
   # Deploy para o Kubernetes
   deploy:
-    needs: [build-frontend, build-backend, security-report]
+    needs: [build-frontend, build-backend]
     runs-on: ubuntu-latest
     environment: production
     if: github.ref == 'refs/heads/main'

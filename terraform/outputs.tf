@@ -14,3 +14,8 @@ output "namespace" {
   description = "Namespace onde os serviços foram instalados"
   value       = module.observability.namespace
 }
+
+output "cert_manager_instructions" {
+  description = "Instruções para configurar o ClusterIssuer"
+  value       = module.cert_manager.cluster_issuer_instructions
+}

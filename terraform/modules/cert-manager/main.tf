@@ -51,34 +51,57 @@ resource "helm_release" "cert_manager" {
   ]
 }
 
-# ClusterIssuer para Let's Encrypt
-resource "kubernetes_manifest" "letsencrypt_prod_issuer" {
-  manifest = {
-    apiVersion = "cert-manager.io/v1"
-    kind       = "ClusterIssuer"
-    metadata = {
-      name = "letsencrypt-prod"
-    }
-    spec = {
-      acme = {
-        server = "https://acme-v02.api.letsencrypt.org/directory"
-        email  = var.email
-        privateKeySecretRef = {
-          name = "letsencrypt-prod-key"
-        }
-        solvers = [
-          {
-            http01 = {
-              ingress = {
-                class = "traefik"
-              }
-            }
-          }
-        ]
-      }
-    }
-  }
+# Comentando o ClusterIssuer direto para evitar erros de CRD
+# resource "kubernetes_manifest" "letsencrypt_prod_issuer" {
+#   manifest = {
+#     apiVersion = "cert-manager.io/v1"
+#     kind       = "ClusterIssuer"
+#     metadata = {
+#       name = "letsencrypt-prod"
+#     }
+#     spec = {
+#       acme = {
+#         server = "https://acme-v02.api.letsencrypt.org/directory"
+#         email  = var.email
+#         privateKeySecretRef = {
+#           name = "letsencrypt-prod-key"
+#         }
+#         solvers = [
+#           {
+#             http01 = {
+#               ingress = {
+#                 class = "traefik"
+#               }
+#             }
+#           }
+#         ]
+#       }
+#     }
+#   }
+#   
+#   # Dependência do cert-manager estar instalado
+#   depends_on = [helm_release.cert_manager]
+# }
+
+# Em vez disso, gere um arquivo YAML que pode ser aplicado manualmente
+resource "local_file" "cluster_issuer" {
+  content = <<-EOT
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: ${var.email}
+    privateKeySecretRef:
+      name: letsencrypt-prod-key
+    solvers:
+    - http01:
+        ingress:
+          class: traefik
+EOT
+  filename = "${path.module}/cluster-issuer.yaml"
   
-  # Dependência do cert-manager estar instalado
   depends_on = [helm_release.cert_manager]
 }

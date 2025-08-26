@@ -7,3 +7,8 @@ output "cluster_issuer_name" {
   description = "Nome do ClusterIssuer criado"
   value       = "letsencrypt-prod"
 }
+
+output "cluster_issuer_instructions" {
+  description = "Instruções para aplicar o ClusterIssuer manualmente"
+  value       = "Execute o comando: kubectl apply -f ${path.module}/cluster-issuer.yaml"
+}

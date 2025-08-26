@@ -7,4 +7,5 @@ resources:
 - frontend.yaml
 - ingress.yaml
 - frontend-nodeport.yaml
+- letsencrypt-issuer.yaml
 

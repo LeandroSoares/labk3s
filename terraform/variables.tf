@@ -54,3 +54,9 @@ variable "optimize_resources" {
   type        = bool
   default     = false
 }
+
+variable "create_ingress" {
+  description = "Criar recursos de Ingress para Grafana e Prometheus"
+  type        = bool
+  default     = false
+}

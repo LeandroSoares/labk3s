@@ -125,6 +125,9 @@ resource "helm_release" "prometheus_stack" {
   depends_on = [kubernetes_namespace.observability]
 }
 
+  depends_on = [kubernetes_namespace.observability]
+}
+
 # Configuração para expor o Grafana (se NodePort ou LoadBalancer for usado)
 resource "kubernetes_service" "grafana_nodeport" {
   count = var.grafana_service_type == "ClusterIP" && var.expose_grafana ? 1 : 0

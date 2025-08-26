@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: joke-app-ingress
+  name: joke-app-main-ingress  # Alterado para evitar conflito
   namespace: joke-app
   annotations:
     kubernetes.io/ingress.class: "traefik"

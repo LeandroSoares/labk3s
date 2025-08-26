@@ -41,6 +41,24 @@ jobs:
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/joke-frontend:${{ env.VERSION }},${{ secrets.DOCKERHUB_USERNAME }}/joke-frontend:latest
           cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/joke-frontend:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/joke-frontend:buildcache,mode=max
+          
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ secrets.DOCKERHUB_USERNAME }}/joke-frontend:${{ env.VERSION }}
+          format: 'sarif'
+          output: 'trivy-results-frontend.sarif'
+          exit-code: '0'  # Não falha a pipeline, apenas reporta
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+          
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results-frontend.sarif'
+          category: 'frontend-vulnerabilities'
 
   build-backend:
     runs-on: ubuntu-latest
@@ -66,6 +84,49 @@ jobs:
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/joke-backend:${{ env.VERSION }},${{ secrets.DOCKERHUB_USERNAME }}/joke-backend:latest
           cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/joke-backend:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/joke-backend:buildcache,mode=max
+          
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ secrets.DOCKERHUB_USERNAME }}/joke-backend:${{ env.VERSION }}
+          format: 'sarif'
+          output: 'trivy-results-backend.sarif'
+          exit-code: '0'  # Não falha a pipeline, apenas reporta
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+          
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results-backend.sarif'
+          category: 'backend-vulnerabilities'
+
+  # Gerar relatório de segurança
+  security-report:
+    needs: [build-frontend, build-backend]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Generate Security Report
+        run: |
+          echo "## 🔒 Relatório de Segurança das Imagens Docker" > security-report.md
+          echo "### ⚠️ Este relatório mostra as vulnerabilidades encontradas nas imagens de contêiner" >> security-report.md
+          echo "#### Imagens analisadas:" >> security-report.md
+          echo "- Frontend: \`${{ secrets.DOCKERHUB_USERNAME }}/joke-frontend:${{ env.VERSION }}\`" >> security-report.md
+          echo "- Backend: \`${{ secrets.DOCKERHUB_USERNAME }}/joke-backend:${{ env.VERSION }}\`" >> security-report.md
+          echo "" >> security-report.md
+          echo "Para ver detalhes completos, verifique a aba 'Security' do repositório." >> security-report.md
+          
+      - name: Upload Security Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-report
+          path: security-report.md
 
   # Preparação para deploy
   prepare-manifests:
@@ -99,7 +160,7 @@ jobs:
 
   # Deploy para o Kubernetes
   deploy:
-    needs: [prepare-manifests]
+    needs: [prepare-manifests, security-report]
     runs-on: ubuntu-latest
     environment: production
     if: github.ref == 'refs/heads/main'
@@ -122,7 +183,14 @@ jobs:
           # Verificar se consegue conectar ao cluster (diagnóstico)
           echo "Verificando conexão com o cluster..."
           kubectl cluster-info
-
+      - name: Update Kubernetes manifests
+        run: |
+          # Substitui as variáveis nos arquivos YAML
+          sed -i "s|\${DOCKER_USERNAME}|${{ secrets.DOCKERHUB_USERNAME }}|g" ./k8s/app/frontend.yaml
+          sed -i "s|\${VERSION}|${{ env.VERSION }}|g" ./k8s/app/frontend.yaml
+          sed -i "s|\${DOCKER_USERNAME}|${{ secrets.DOCKERHUB_USERNAME }}|g" ./k8s/app/backend.yaml
+          sed -i "s|\${VERSION}|${{ env.VERSION }}|g" ./k8s/app/backend.yaml
+       
       - name: Deploy to Kubernetes
         run: |
           # Exibir os arquivos que serão aplicados

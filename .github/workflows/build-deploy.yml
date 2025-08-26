@@ -95,7 +95,7 @@ jobs:
           file_pattern: k8s/app/*.yaml
           commit_options: '--no-verify'
           push_options: '--force'
-          token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
   # Deploy para o Kubernetes
   deploy:
@@ -106,6 +106,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          ref: main
+          fetch-depth: 0
 
       - name: Install kubectl
         uses: azure/setup-kubectl@v1
@@ -115,11 +118,19 @@ jobs:
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBECONFIG }}" > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
+          
+          # Verificar se consegue conectar ao cluster (diagnóstico)
+          echo "Verificando conexão com o cluster..."
+          kubectl cluster-info
 
       - name: Deploy to Kubernetes
         run: |
+          # Exibir os arquivos que serão aplicados
+          echo "Arquivos a serem aplicados:"
+          ls -la k8s/app/
+          
           # Aplicar todos os recursos usando kustomize
-          kubectl apply -k k8s/app/
+          kubectl apply -k k8s/app/ --validate=true
           
           # Verificar status do deployment
           echo "Aguardando deployments..."
@@ -127,3 +138,8 @@ jobs:
           kubectl rollout status deployment/frontend -n joke-app --timeout=180s
           
           echo "Aplicação implantada com sucesso em www.labk3s.online"
+          
+          # Mostrar informações sobre os deployments
+          echo "Informações dos deployments:"
+          kubectl get deployments -n joke-app
+          kubectl get pods -n joke-app

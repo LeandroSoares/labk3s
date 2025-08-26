@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: ${DOCKER_USERNAME}/joke-frontend:${VERSION}
+        image: leandrogamedesigner/joke-frontend:latest
         ports:
         - containerPort: 80
         resources:

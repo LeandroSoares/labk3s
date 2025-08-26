@@ -4,35 +4,123 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tell Me a Joke</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            text-align: center;
-            background-color: #f5f5f5;
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            200: '#bbf7d0',
+                            300: '#86efac',
+                            400: '#4ade80',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                        },
+                        secondary: {
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    }
+                }
+            }
         }
-        .joke-container {
-            background-color: white;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 20px 0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            min-height: 100px;
-        }
-        button {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            font-size: 16px;
+    </script>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans text-gray-800">
+
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="text-center mb-10">
+            <h1 class="text-4xl font-bold text-primary-600 mb-2">Tell Me a Joke</h1>
+            <p class="text-gray-600">Um gerador de piadas aleatórias de programação</p>
+        </header>
+        
+        <!-- Joke Container -->
+        <div class="max-w-2xl mx-auto bg-white rounded-xl shadow-md overflow-hidden mb-8">
+            <div class="p-8">
+                <div class="flex items-center justify-center">
+                    <svg class="h-12 w-12 text-primary-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </div>
+                <div class="mt-4 mb-6">
+                    <p id="joke-text" class="text-xl text-center py-6 px-4 italic">Carregando piada...</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Button Container -->
+        <div class="flex justify-center space-x-4 mb-10">
+            <button id="new-joke-btn" class="bg-primary-600 hover:bg-primary-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-opacity-50">
+                <div class="flex items-center">
+                    <svg class="h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    Nova Piada
+                </div>
+            </button>
+            <button id="add-joke-btn" class="bg-secondary-600 hover:bg-secondary-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:ring-opacity-50">
+                <div class="flex items-center">
+                    <svg class="h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Adicionar Piada
+                </div>
+            </button>
+        </div>
+        
+        <!-- Footer -->
+        <footer class="text-center text-gray-500 text-sm mt-8">
+            <p>Laboratório K3s &copy; 2025 - Implementado com Kubernetes e Terraform</p>
+        </footer>
+    </div>
+    
+    <!-- Modal para adicionar piada -->
+    <div id="addJokeModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+        <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 transform transition-all">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-gray-800">Adicionar Nova Piada</h2>
+                    <button class="close text-gray-500 hover:text-gray-800 focus:outline-none">
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div id="success-message" class="hidden bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4 rounded">
+                    <div class="flex items-center">
+                        <svg class="h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <p>Piada adicionada com sucesso!</p>
+                    </div>
+                </div>
+                
+                <form id="addJokeForm">
+                    <div class="mb-4">
+                        <label for="jokeText" class="block text-gray-700 text-sm font-bold mb-2">Sua Piada:</label>
+                        <textarea id="jokeText" class="w-full px-3 py-2 text-gray-700 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" rows="4" placeholder="Digite sua piada aqui..."></textarea>
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="submit" class="bg-primary-600 hover:bg-primary-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-opacity-50">
+                            Salvar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
             border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        button:hover {
-            background-color: #45a049;
+            display: none;
         }
     </style>
 </head>
@@ -41,7 +129,23 @@
     <div class="joke-container" id="joke-text">
         Carregando piada...
     </div>
-    <button id="new-joke-btn">Tell Me a Joke</button>
+    <div class="button-container">
+        <button id="new-joke-btn">Tell Me a Joke</button>
+        <button id="add-joke-btn" class="secondary">Add a Joke</button>
+    </div>
+    
+    <!-- Modal para adicionar piada -->
+    <div id="addJokeModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Add a New Joke</h2>
+            <div class="success-message" id="success-message">Piada adicionada com sucesso!</div>
+            <form id="addJokeForm">
+                <textarea id="jokeText" placeholder="Digite sua piada aqui..."></textarea>
+                <button type="submit">Salvar</button>
+            </form>
+        </div>
+    </div>
 
     <script>
         // Função para buscar uma piada do backend
@@ -58,6 +162,81 @@
                 document.getElementById('joke-text').textContent = 'Erro ao carregar piada. Tente novamente.';
             }
         }
+        
+        // Função para adicionar uma nova piada
+        async function addJoke(jokeText) {
+            try {
+                const response = await fetch('/api/jokes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ text: jokeText })
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ error: 'Erro desconhecido' }));
+                    throw new Error(errorData.error || `Erro HTTP: ${response.status}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                console.error('Erro:', error);
+                throw error;
+            }
+        }
+        
+        // Configuração do modal
+        const modal = document.getElementById('addJokeModal');
+        const addJokeBtn = document.getElementById('add-joke-btn');
+        const closeBtn = document.querySelector('.close');
+        const form = document.getElementById('addJokeForm');
+        const successMessage = document.getElementById('success-message');
+        
+        // Abrir o modal
+        addJokeBtn.addEventListener('click', () => {
+            modal.classList.remove('hidden');
+            successMessage.classList.add('hidden');
+            document.getElementById('jokeText').value = '';
+        });
+        
+        // Fechar o modal
+        closeBtn.addEventListener('click', () => {
+            modal.classList.add('hidden');
+        });
+        
+        // Fechar o modal clicando fora dele
+        window.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                modal.classList.add('hidden');
+            }
+        });
+        
+        // Enviar o formulário
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const jokeText = document.getElementById('jokeText').value.trim();
+            
+            if (!jokeText) {
+                alert('Por favor, digite uma piada!');
+                return;
+            }
+            
+            try {
+                await addJoke(jokeText);
+                successMessage.classList.remove('hidden');
+                document.getElementById('jokeText').value = '';
+                
+                // Fechar o modal após 2 segundos
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    // Buscar uma nova piada para mostrar a que acabou de ser adicionada
+                    fetchJoke();
+                }, 2000);
+            } catch (error) {
+                alert('Erro ao adicionar piada: ' + error.message);
+            }
+        });
 
         // Buscar uma piada ao carregar a página
         window.addEventListener('DOMContentLoaded', fetchJoke);

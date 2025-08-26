@@ -1,0 +1,187 @@
+name: Build and Deploy Joke App
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/**'
+      - '.github/workflows/build-deploy.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/**'
+  # Permite execução manual do workflow
+  workflow_dispatch:
+
+env:
+  VERSION: ${{ github.sha }}
+
+jobs:
+  build-frontend:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Build and push Frontend
+        uses: docker/build-push-action@v4
+        with:
+          context: ./src/frontend
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/joke-frontend:${{ env.VERSION }},${{ secrets.DOCKERHUB_USERNAME }}/joke-frontend:latest
+          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/joke-frontend:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/joke-frontend:buildcache,mode=max
+          
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ secrets.DOCKERHUB_USERNAME }}/joke-frontend:${{ env.VERSION }}
+          format: 'sarif'
+          output: 'trivy-results-frontend.sarif'
+          exit-code: '0'  # Não falha a pipeline, apenas reporta
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+          
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results-frontend.sarif'
+          category: 'frontend-vulnerabilities'
+
+  build-backend:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Build and push Backend
+        uses: docker/build-push-action@v4
+        with:
+          context: ./src/backend
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/joke-backend:${{ env.VERSION }},${{ secrets.DOCKERHUB_USERNAME }}/joke-backend:latest
+          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/joke-backend:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/joke-backend:buildcache,mode=max
+          
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ secrets.DOCKERHUB_USERNAME }}/joke-backend:${{ env.VERSION }}
+          format: 'sarif'
+          output: 'trivy-results-backend.sarif'
+          exit-code: '0'  # Não falha a pipeline, apenas reporta
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+          
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results-backend.sarif'
+          category: 'backend-vulnerabilities'
+
+  # Gerar relatório de segurança
+  security-report:
+    needs: [build-frontend, build-backend]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Generate Security Report
+        run: |
+          echo "## 🔒 Relatório de Segurança das Imagens Docker" > security-report.md
+          echo "### ⚠️ Este relatório mostra as vulnerabilidades encontradas nas imagens de contêiner" >> security-report.md
+          echo "#### Imagens analisadas:" >> security-report.md
+          echo "- Frontend: \`${{ secrets.DOCKERHUB_USERNAME }}/joke-frontend:${{ env.VERSION }}\`" >> security-report.md
+          echo "- Backend: \`${{ secrets.DOCKERHUB_USERNAME }}/joke-backend:${{ env.VERSION }}\`" >> security-report.md
+          echo "" >> security-report.md
+          echo "Para ver detalhes completos, verifique a aba 'Security' do repositório." >> security-report.md
+          
+      - name: Upload Security Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-report
+          path: security-report.md
+
+  # Deploy para o Kubernetes
+  deploy:
+    needs: [build-frontend, build-backend, security-report]
+    runs-on: ubuntu-latest
+    environment: production
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v1
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+          
+          # Verificar se consegue conectar ao cluster (diagnóstico)
+          echo "Verificando conexão com o cluster..."
+          kubectl cluster-info
+
+      - name: Setup Kustomize
+        uses: imranismail/setup-kustomize@v1
+      
+      - name: Update Kubernetes manifests
+        run: |
+          # Substitui as variáveis nos arquivos YAML
+          sed -i "s|\${DOCKER_USERNAME}|${{ secrets.DOCKERHUB_USERNAME }}|g" ./k8s/app/frontend.yaml
+          sed -i "s|\${VERSION}|${{ env.VERSION }}|g" ./k8s/app/frontend.yaml
+          sed -i "s|\${DOCKER_USERNAME}|${{ secrets.DOCKERHUB_USERNAME }}|g" ./k8s/app/backend.yaml
+          sed -i "s|\${VERSION}|${{ env.VERSION }}|g" ./k8s/app/backend.yaml
+       
+      - name: Deploy to Kubernetes
+        run: |
+          # Exibir os arquivos que serão aplicados
+          echo "Arquivos a serem aplicados:"
+          ls -la k8s/app/
+          
+          # Aplicar todos os recursos usando kustomize
+          kubectl apply -k k8s/app/ --validate=true
+          
+          # Verificar status do deployment
+          echo "Aguardando deployments..."
+          kubectl rollout status deployment/backend -n joke-app --timeout=180s
+          kubectl rollout status deployment/frontend -n joke-app --timeout=180s
+          
+          echo "Aplicação implantada com sucesso em www.labk3s.online"
+          
+          # Mostrar informações sobre os deployments
+          echo "Informações dos deployments:"
+          kubectl get deployments -n joke-app
+          kubectl get pods -n joke-app

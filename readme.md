@@ -3,6 +3,11 @@
 ## Objetivo
 Demonstrar conhecimentos em DevOps, implementando um cluster Kubernetes (K3s) com stack de observabilidade (Prometheus + Grafana) utilizando Terraform para automação.
 
+## Acesso
+A aplicação está acessível em: [https://www.labk3s.online](https://www.labk3s.online)  
+Dashboard Grafana: [https://grafana.labk3s.online](https://grafana.labk3s.online)
+Dashboard Prometheus: [https://prometheus.labk3s.online](https://prometheus.labk3s.online)
+
 ---
 
 ## Arquitetura do Projeto Atualizada
@@ -193,9 +198,21 @@ Este script:
 - Instala kubectl e Helm
 - Configura acesso ao cluster
 
-### 2. Configuração da Stack de Observabilidade
+### 2. Configuração do Traefik Ingress
 ```sh
 # Na sua VPS, após instalar o K3s
+chmod +x setup-traefik.sh
+./setup-traefik.sh
+```
+Este script:
+- Configura o Traefik Ingress Controller do K3s
+- Define redirecionamento automático HTTP para HTTPS
+- Expõe o serviço Traefik usando o IP da VPS
+- Não é necessário Nginx adicional para expor serviços
+
+### 3. Configuração da Stack de Observabilidade
+```sh
+# Na sua VPS, após configurar o Traefik
 chmod +x setup-observability.sh
 ./setup-observability.sh
 ```
@@ -206,9 +223,9 @@ Este script:
 - Configura acesso via NodePort
 - Gera informações de acesso
 
-### 3. Configuração de TLS com Let's Encrypt
+### 4. Configuração de TLS com Let's Encrypt
 ```sh
-# Na sua VPS, após configurar o K3s
+# Na sua VPS, após configurar o Traefik
 chmod +x setup-tls.sh
 ./setup-tls.sh www.labk3s.online seu-email@exemplo.com
 ```
@@ -217,21 +234,6 @@ Este script:
 - Cria um ClusterIssuer para Let's Encrypt
 - Configura emissão automática de certificados HTTPS
 - Prepara o cluster para usar TLS com o domínio www.labk3s.online
-- Instala o Prometheus e Grafana via Helm
-- Configura acesso via NodePort
-- Gera informações de acesso
-
-### 3. Implantação da Aplicação
-```sh
-# Na sua VPS, após configurar a observabilidade
-chmod +x deploy-app.sh
-./deploy-app.sh
-```
-Este script:
-- Solicita seu usuário do Docker Hub
-- Cria o namespace para a aplicação
-- Implanta o backend e frontend
-- Configura acesso via NodePort ou Ingress
 - Gera informações de acesso
 
 ---
@@ -246,20 +248,28 @@ Este script:
    - Aplicações em containers no Kubernetes
    - Configuração declarativa com Dockerfiles otimizados
 
-3. **Observabilidade**
-   - Monitoramento com Prometheus
-   - Visualização com Grafana
-   - Aplicação de exemplo instrumentada com métricas
+## Perguntas Frequentes
 
-4. **Automação**
-   - Instalação automatizada via Terraform
-   - CI/CD com GitHub Actions
-   - Construção e publicação automática de imagens Docker
+### É necessário um Nginx adicional para expor serviços do K3s?
 
-5. **Segurança**
-   - Namespace dedicado para isolamento
-   - Variáveis sensíveis marcadas como tal
-   - Containers executando como usuários não-root
+Não. O K3s já vem com o Traefik Ingress Controller embutido, que funciona como proxy reverso e controller de ingress. O script `setup-traefik.sh` configura o Traefik para expor serviços diretamente usando o IP da VPS, eliminando a necessidade de um Nginx adicional.
+
+### Como são gerenciados os certificados TLS?
+
+O projeto utiliza cert-manager para gerenciar certificados TLS automaticamente através do Let's Encrypt. O script `setup-tls.sh` configura todo o processo, e os certificados são renovados automaticamente antes de expirarem.
+
+### Como monitorar a saúde da aplicação?
+
+A stack de observabilidade (Prometheus + Grafana) coleta métricas de todos os componentes do cluster, incluindo a aplicação. O Grafana vem pré-configurado com dashboards para monitorar o cluster K3s, além de dashboards específicos para a aplicação "Tell Me a Joke".
+
+---
+
+## Principais Recursos
+
+1. **Infraestrutura**
+   - K3s como distribuição leve do Kubernetes
+   - Infraestrutura como código com Terraform
+   - Módulos Terraform reutilizáveis
 
 ---
 

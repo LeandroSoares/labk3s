@@ -8,4 +8,5 @@ resources:
 - ingress.yaml
 - frontend-nodeport.yaml
 - api-route.yaml
+- grafana-route.yaml
 

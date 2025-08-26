@@ -31,6 +31,7 @@ module "observability" {
   grafana_service_type   = var.grafana_service_type
   expose_grafana         = var.expose_grafana
   grafana_nodeport       = var.grafana_nodeport
+  optimize_resources     = var.optimize_resources
   
   # Valores personalizados para o Prometheus Stack
   prometheus_stack_values = {

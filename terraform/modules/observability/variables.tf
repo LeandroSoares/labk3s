@@ -39,3 +39,9 @@ variable "prometheus_stack_values" {
   type        = map(string)
   default     = {}
 }
+
+variable "optimize_resources" {
+  description = "Otimizar recursos para VPS com recursos limitados (2 cores, 8GB RAM)"
+  type        = bool
+  default     = false
+}

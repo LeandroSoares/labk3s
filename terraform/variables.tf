@@ -48,3 +48,9 @@ variable "grafana_admin_password" {
   default     = "admin"  # Altere para uma senha segura ou use variáveis de ambiente
   sensitive   = true
 }
+
+variable "optimize_resources" {
+  description = "Otimizar recursos para VPS com recursos limitados (2 cores, 8GB RAM)"
+  type        = bool
+  default     = false
+}

@@ -3,6 +3,64 @@
 ## Objetivo
 Demonstrar conhecimentos em DevOps, implementando um cluster Kubernetes (K3s) com stack de observabilidade (Prometheus + Grafana) utilizando Terraform para automação.
 
+## Próximos Passos (K3s já instalado)
+
+Se você já executou o script `install-k3s.sh` e tem o K3s funcionando no seu servidor, siga estas etapas para completar a configuração:
+
+1. **Otimize os recursos** (recomendado para VPS com 2 cores e 8GB RAM):
+   ```sh
+   # Faça upload do script para o servidor
+   scp optimize-resources.sh root@seu-servidor:/root/
+   
+   # No servidor
+   chmod +x optimize-resources.sh
+   ./optimize-resources.sh
+   ```
+
+2. **Configure o Traefik Ingress**:
+   ```sh
+   # Faça upload do script para o servidor
+   scp setup-traefik.sh root@seu-servidor:/root/
+   
+   # No servidor
+   chmod +x setup-traefik.sh
+   ./setup-traefik.sh
+   ```
+
+3. **Configure a stack de observabilidade via Terraform**:
+   ```sh
+   # Faça upload dos arquivos Terraform para o servidor
+   scp -r terraform root@seu-servidor:/root/
+   
+   # No servidor
+   cd /root/terraform
+   terraform init
+   terraform apply -var="optimize_resources=true"
+   
+   # Ou usando o arquivo de variáveis otimizado
+   terraform apply -var-file="terraform-optimized.tfvars"
+   ```
+
+4. **Configure o TLS com Let's Encrypt**:
+   ```sh
+   # Faça upload do script para o servidor
+   scp setup-tls.sh root@seu-servidor:/root/
+   
+   # No servidor
+   chmod +x setup-tls.sh
+   ./setup-tls.sh www.labk3s.online seu-email@exemplo.com
+   ```
+
+5. **Verifique a configuração**:
+   ```sh
+   # Verifique os serviços do K3s
+   kubectl get nodes
+   kubectl get pods --all-namespaces
+   kubectl get svc --all-namespaces
+   ```
+
+Após completar estas etapas, sua aplicação estará disponível em https://www.labk3s.online com a stack de observabilidade configurada e otimizada para sua VPS com recursos limitados.
+
 ## Acesso
 A aplicação está acessível em: [https://www.labk3s.online](https://www.labk3s.online)  
 Dashboard Grafana: [https://grafana.labk3s.online](https://grafana.labk3s.online)
@@ -210,18 +268,23 @@ Este script:
 - Expõe o serviço Traefik usando o IP da VPS
 - Não é necessário Nginx adicional para expor serviços
 
-### 3. Configuração da Stack de Observabilidade
+### 3. Configuração da Stack de Observabilidade via Terraform
 ```sh
 # Na sua VPS, após configurar o Traefik
-chmod +x setup-observability.sh
-./setup-observability.sh
+# Navegue até o diretório do Terraform
+cd terraform
+
+# Inicialize o Terraform
+terraform init
+
+# Para VPS com recursos limitados (2 cores, 8GB RAM)
+terraform apply -var="optimize_resources=true"
 ```
-Este script:
-- Adiciona os repositórios Helm necessários
+Este processo:
 - Cria o namespace para observabilidade
-- Instala o Prometheus e Grafana via Helm
-- Configura acesso via NodePort
-- Gera informações de acesso
+- Instala o Prometheus e Grafana via Terraform/Helm
+- Configura limites de recursos otimizados
+- Prepara serviços para acesso via Ingress
 
 ### 4. Configuração de TLS com Let's Encrypt
 ```sh
@@ -234,6 +297,19 @@ Este script:
 - Cria um ClusterIssuer para Let's Encrypt
 - Configura emissão automática de certificados HTTPS
 - Prepara o cluster para usar TLS com o domínio www.labk3s.online
+
+### 5. Otimização de Recursos (para VPS com recursos limitados)
+```sh
+# Na sua VPS, após a instalação básica
+chmod +x optimize-resources.sh
+./optimize-resources.sh
+```
+Este script:
+- Ajusta limites de eviction do kubelet para prevenir OOM kills
+- Configura limites de recursos para Prometheus e Grafana
+- Otimiza parâmetros do kernel para melhor desempenho
+- Aplica configurações de recursos para os deployments da aplicação
+- Recomenda configurações adicionais para economizar recursos
 - Gera informações de acesso
 
 ---
@@ -261,6 +337,32 @@ O projeto utiliza cert-manager para gerenciar certificados TLS automaticamente a
 ### Como monitorar a saúde da aplicação?
 
 A stack de observabilidade (Prometheus + Grafana) coleta métricas de todos os componentes do cluster, incluindo a aplicação. O Grafana vem pré-configurado com dashboards para monitorar o cluster K3s, além de dashboards específicos para a aplicação "Tell Me a Joke".
+
+### Como otimizar o uso de recursos em uma VPS com recursos limitados?
+
+Para VPS com 2 cores e 8GB de RAM, recomendamos:
+
+1. **Ative a otimização no Terraform**:
+   ```sh
+   terraform apply -var="optimize_resources=true"
+   ```
+   Ou use o arquivo de variáveis otimizado:
+   ```sh
+   terraform apply -var-file="terraform-optimized.tfvars"
+   ```
+
+2. **Execute o script de otimização do sistema**:
+   ```sh
+   ./optimize-resources.sh
+   ```
+   
+3. **Configurações aplicadas automaticamente**:
+   - Recursos do Prometheus limitados a 200m CPU e 512Mi memória
+   - Recursos do Grafana limitados a 100m CPU e 256Mi memória
+   - AlertManager desativado para economizar recursos
+   - Período de retenção reduzido para 5 dias
+   - Parâmetros do kernel otimizados
+   - Limites de eviction do kubelet ajustados
 
 ---
 

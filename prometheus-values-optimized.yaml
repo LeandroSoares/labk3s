@@ -1,0 +1,94 @@
+# Valores otimizados do Helm para Prometheus Stack
+# Para VPS com recursos limitados (2 cores, 8GB RAM)
+
+prometheus:
+  prometheusSpec:
+    # Reduzir período de retenção para economizar espaço em disco
+    retention: 5d
+    retentionSize: 5GB
+    
+    # Limites de recursos para Prometheus
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 200m
+        memory: 512Mi
+        
+    # Limitar o tamanho do volume persistente
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          resources:
+            requests:
+              storage: 5Gi
+              
+    # Configurações de scrape para reduzir a carga
+    scrapeInterval: 60s
+    evaluationInterval: 60s
+    
+# Configurações de recursos para Grafana
+grafana:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 100m
+      memory: 256Mi
+      
+  # Configuração para utilizar SQLite ao invés de outras DBs mais pesadas
+  database:
+    type: sqlite3
+
+# Desativar AlertManager para economizar recursos
+alertmanager:
+  enabled: false
+
+# Limitar recursos para kube-state-metrics
+kubeStateMetrics:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+# Limitar recursos para node-exporter
+nodeExporter:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+# Limitar recursos para o operador do Prometheus
+prometheusOperator:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+      
+  # Reduzir a frequência de reconciliação
+  configReloaderCpu: 50m
+  configReloaderMemory: 64Mi
+
+# Configurar recursos do Traefik ServiceMonitor
+additionalServiceMonitors:
+  - name: traefik
+    selector:
+      matchLabels:
+        app.kubernetes.io/name: traefik
+    namespaceSelector:
+      matchNames:
+        - kube-system
+    endpoints:
+      - port: metrics
+        interval: 60s

@@ -93,6 +93,9 @@ jobs:
         with:
           commit_message: "ci: Update Kubernetes manifests with new image versions"
           file_pattern: k8s/app/*.yaml
+          commit_options: '--no-verify'
+          push_options: '--force'
+          token: ${{ secrets.GITHUB_TOKEN }}
 
   # Deploy para o Kubernetes
   deploy:

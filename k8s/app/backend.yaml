@@ -16,12 +16,12 @@ spec:
         app: backend
       annotations:
         prometheus.io/scrape: "true"
-        prometheus.io/path: "/metrics"
+        prometheus.io/path: "/metrics" 
         prometheus.io/port: "3000"
     spec:
       containers:
       - name: backend
-        image: leandrogamedesigner/joke-backend:latest
+        image: ${DOCKER_USERNAME}/joke-backend:${VERSION}
         ports:
         - containerPort: 3000
         resources:

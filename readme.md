@@ -182,9 +182,25 @@ Para configurar:
 ### Acesso à Aplicação
 
 A aplicação está configurada para ser acessada através do domínio:
-- **URL**: [http://www.labk3s.online](http://www.labk3s.online)
+- **URL**: [https://www.labk3s.online](https://www.labk3s.online)
 
 O frontend web permite visualizar e interagir com piadas aleatórias, enquanto o backend fornece uma API RESTful com endpoints para listar, adicionar e obter piadas aleatórias.
+
+### Nova Funcionalidade: Adição de Piadas
+
+A aplicação agora possui uma interface para que os usuários adicionem suas próprias piadas:
+
+1. Acesse a aplicação em [https://www.labk3s.online](https://www.labk3s.online)
+2. Clique no botão "Add a Joke" na interface principal
+3. Digite sua piada no formulário que aparece
+4. Clique em "Salvar" para adicionar a piada ao banco de dados
+5. A piada será armazenada e poderá aparecer quando você solicitar piadas aleatórias
+
+**Implementação Técnica:**
+- Frontend: Modal com formulário HTML e JavaScript para submissão assíncrona
+- Backend: Endpoint POST `/jokes` para receber e armazenar novas piadas
+- API Routing: Middleware Traefik para rotear requisições `/api/*` para o backend
+- Armazenamento: Banco de dados SQLite com persistência via PersistentVolumeClaim
 
 ## Passo a Passo de Implementação
 

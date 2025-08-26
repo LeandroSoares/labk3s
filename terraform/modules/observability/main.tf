@@ -34,7 +34,7 @@ resource "helm_release" "prometheus_stack" {
     },
     {
       name  = "prometheus.prometheusSpec.resources.requests.memory"
-      value = var.optimize_resources ? "256Mi" : "1Gi"
+      value = var.optimize_resources ? "512Mi" : "1Gi"
     },
     {
       name  = "prometheus.prometheusSpec.resources.limits.cpu"
@@ -42,7 +42,7 @@ resource "helm_release" "prometheus_stack" {
     },
     {
       name  = "prometheus.prometheusSpec.resources.limits.memory"
-      value = var.optimize_resources ? "512Mi" : "2Gi"
+      value = var.optimize_resources ? "1Gi" : "2Gi"
     },
   
     # Configuração para retenção reduzida em ambientes com recursos limitados
@@ -55,7 +55,11 @@ resource "helm_release" "prometheus_stack" {
       value = var.optimize_resources ? "5GB" : "15GB"
     },
   
-    # Configuração de recursos para Grafana
+    # Configuração para o Grafana
+    {
+      name  = "grafana.replicas"
+      value = tostring(var.grafana_replicas)
+    },
     {
       name  = "grafana.resources.requests.cpu"
       value = var.optimize_resources ? "50m" : "100m"

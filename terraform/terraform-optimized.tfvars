@@ -12,6 +12,7 @@ optimize_resources = true
 
 # Configurações do Grafana
 grafana_enabled = true
+grafana_replicas = 1  # Usar apenas uma réplica para economizar recursos
 grafana_service_type = "ClusterIP"  # Use ClusterIP para acessar via Ingress
 expose_grafana = false  # Não expor via NodePort, usar Ingress
 grafana_admin_password = "admin@123"  # Senha atualizada para maior segurança

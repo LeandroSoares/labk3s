@@ -39,6 +39,7 @@ module "observability" {
   namespace                = var.namespace
   prometheus_stack_version = var.prometheus_stack_version
   grafana_enabled          = var.grafana_enabled
+  grafana_replicas         = var.grafana_replicas
   grafana_service_type     = var.grafana_service_type
   expose_grafana           = var.expose_grafana
   grafana_nodeport         = var.grafana_nodeport

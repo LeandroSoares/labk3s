@@ -24,6 +24,12 @@ variable "grafana_enabled" {
   default     = true
 }
 
+variable "grafana_replicas" {
+  description = "Número de réplicas para o Grafana"
+  type        = number
+  default     = 1
+}
+
 variable "grafana_service_type" {
   description = "Tipo de serviço para o Grafana (ClusterIP, NodePort, LoadBalancer)"
   type        = string

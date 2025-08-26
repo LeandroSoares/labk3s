@@ -6,7 +6,7 @@ metadata:
   labels:
     app: backend
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: backend
@@ -24,6 +24,9 @@ spec:
         image: ${DOCKER_USERNAME}/joke-backend:${VERSION}
         ports:
         - containerPort: 3000
+        env:
+        - name: NODE_ENV
+          value: "production"
         resources:
           limits:
             cpu: "0.3"

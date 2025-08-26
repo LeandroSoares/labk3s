@@ -119,46 +119,32 @@
             </div>
         </div>
     </div>
-            border-radius: 4px;
-            display: none;
-        }
-    </style>
-</head>
-<body>
-    <h1>Tell Me a Joke</h1>
-    <div class="joke-container" id="joke-text">
-        Carregando piada...
-    </div>
-    <div class="button-container">
-        <button id="new-joke-btn">Tell Me a Joke</button>
-        <button id="add-joke-btn" class="secondary">Add a Joke</button>
-    </div>
-    
-    <!-- Modal para adicionar piada -->
-    <div id="addJokeModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2>Add a New Joke</h2>
-            <div class="success-message" id="success-message">Piada adicionada com sucesso!</div>
-            <form id="addJokeForm">
-                <textarea id="jokeText" placeholder="Digite sua piada aqui..."></textarea>
-                <button type="submit">Salvar</button>
-            </form>
-        </div>
-    </div>
 
     <script>
         // Função para buscar uma piada do backend
         async function fetchJoke() {
             try {
+                document.getElementById('joke-text').textContent = 'Carregando piada...';
+                console.log('Tentando buscar piada em /api/jokes/random');
                 const response = await fetch('/api/jokes/random');
+                console.log('Resposta recebida:', response.status);
+                
                 if (!response.ok) {
-                    throw new Error('Erro ao buscar piada');
+                    const errorText = await response.text();
+                    console.error('Resposta de erro:', errorText);
+                    
+                    if (response.status === 404) {
+                        document.getElementById('joke-text').textContent = 'Sem piadas hoje...';
+                    } else {
+                        throw new Error(`Erro ao buscar piada: ${response.status}`);
+                    }
+                    return;
                 }
+                
                 const data = await response.json();
-                document.getElementById('joke-text').textContent = data.text;
+                document.getElementById('joke-text').textContent = data.text || 'Sem piadas hoje...';
             } catch (error) {
-                console.error('Erro:', error);
+                console.error('Erro ao buscar piada:', error);
                 document.getElementById('joke-text').textContent = 'Erro ao carregar piada. Tente novamente.';
             }
         }
@@ -166,6 +152,7 @@
         // Função para adicionar uma nova piada
         async function addJoke(jokeText) {
             try {
+                console.log('Tentando adicionar piada em /api/jokes');
                 const response = await fetch('/api/jokes', {
                     method: 'POST',
                     headers: {
@@ -174,14 +161,23 @@
                     body: JSON.stringify({ text: jokeText })
                 });
                 
+                console.log('Resposta recebida:', response.status);
+                
                 if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({ error: 'Erro desconhecido' }));
-                    throw new Error(errorData.error || `Erro HTTP: ${response.status}`);
+                    const errorText = await response.text();
+                    console.error('Resposta de erro:', errorText);
+                    
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        throw new Error(errorData.error || `Erro HTTP: ${response.status}`);
+                    } catch (jsonError) {
+                        throw new Error(`Erro ao adicionar piada: ${response.status}`);
+                    }
                 }
                 
                 return await response.json();
             } catch (error) {
-                console.error('Erro:', error);
+                console.error('Erro ao adicionar piada:', error);
                 throw error;
             }
         }

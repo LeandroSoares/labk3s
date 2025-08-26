@@ -20,7 +20,9 @@ const app = express();
 app.use(express.json());
 
 // Configuração do SQLite
-const dbPath = path.resolve(__dirname, 'jokes.db');
+const dbPath = process.env.NODE_ENV === 'production' 
+    ? path.resolve('/data/jokes.db')  // Caminho para o volume no Kubernetes
+    : path.resolve(__dirname, 'jokes.db');  // Caminho local para desenvolvimento
 const db = new sqlite3.Database(dbPath);
 
 // Criar tabela de piadas se não existir

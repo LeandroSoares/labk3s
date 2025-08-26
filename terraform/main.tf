@@ -23,6 +23,15 @@ provider "helm" {
   }
 }
 
+# Módulo para cert-manager e Let's Encrypt
+module "cert_manager" {
+  source = "./modules/cert-manager"
+  
+  cert_manager_version = var.cert_manager_version
+  email                = var.letsencrypt_email
+  domain_name          = var.domain_name
+}
+
 # Módulo de observabilidade com Prometheus e Grafana
 module "observability" {
   source = "./modules/observability"

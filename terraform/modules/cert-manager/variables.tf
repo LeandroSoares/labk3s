@@ -1,0 +1,16 @@
+variable "cert_manager_version" {
+  description = "Versão do cert-manager"
+  type        = string
+  default     = "v1.13.1"
+}
+
+variable "email" {
+  description = "Email para registro no Let's Encrypt"
+  type        = string
+}
+
+variable "domain_name" {
+  description = "Nome de domínio para o certificado"
+  type        = string
+  default     = "www.labk3s.online"
+}

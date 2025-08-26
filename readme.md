@@ -1,7 +1,21 @@
 # Projeto: Stack DevOps com K3s, Terraform e Observabilidade
 
 ## Objetivo
-Demonstrar conhecimentos em DevOps, implementando um cluster Kubernetes (K3s) com stack de observabilidade (Prometheus + Grafana) utilizando Terraform para automação.
+Demonstrar conhecimentos em DevOps, implementando um cluster Kubernetes (K3s) com stack de observabilidade (Prometheus + Grafana) e certificados TLS utilizando Terraform para automação de componentes de terceiros e Kustomize para recursos da aplicação.
+
+## Arquitetura do Projeto
+
+### Terraform (Componentes de Terceiros)
+- **Módulos Terraform**:
+  - **observability**: Prometheus e Grafana para monitoramento
+  - **cert-manager**: Gerenciamento de certificados TLS com Let's Encrypt
+
+### Kustomize (Recursos da Aplicação)
+- **k8s/app**: Contém os manifestos Kubernetes da aplicação
+  - Frontend
+  - Backend
+  - Configurações de Ingress
+  - Serviços
 
 ## Próximos Passos (K3s já instalado)
 
@@ -27,7 +41,7 @@ Se você já executou o script `install-k3s.sh` e tem o K3s funcionando no seu s
    ./setup-traefik.sh
    ```
 
-3. **Configure a stack de observabilidade via Terraform**:
+3. **Instale os componentes de terceiros via Terraform**:
    ```sh
    # Faça upload dos arquivos Terraform para o servidor
    scp -r terraform root@seu-servidor:/root/
@@ -35,19 +49,20 @@ Se você já executou o script `install-k3s.sh` e tem o K3s funcionando no seu s
    # No servidor
    cd /root/terraform
    terraform init
-   terraform apply -var="optimize_resources=true"
+   terraform apply -var="optimize_resources=true" -var="letsencrypt_email=seu-email@exemplo.com"
    
    # Ou usando o arquivo de variáveis otimizado
-   terraform apply -var-file="terraform-optimized.tfvars"
+   terraform apply -var-file="terraform-optimized.tfvars" -var="letsencrypt_email=seu-email@exemplo.com"
    ```
 
-4. **Configure o TLS com Let's Encrypt**:
+4. **Implante sua aplicação usando Kustomize**:
    ```sh
-   # Faça upload do script para o servidor
-   scp setup-tls.sh root@seu-servidor:/root/
+   # Faça upload dos manifestos Kubernetes para o servidor
+   scp -r k8s root@seu-servidor:/root/
    
    # No servidor
-   chmod +x setup-tls.sh
+   kubectl apply -k /root/k8s/app
+   ```
    ./setup-tls.sh www.labk3s.online seu-email@exemplo.com
    ```
 

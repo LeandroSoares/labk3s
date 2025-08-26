@@ -18,3 +18,8 @@ grafana_admin_password = "admin"  # Altere para uma senha segura
 
 # Criar recursos de Ingress
 create_ingress = true
+
+# Configuração do cert-manager
+cert_manager_version = "v1.13.1"
+letsencrypt_email = "seu-email@exemplo.com"  # Substitua pelo seu email
+domain_name = "www.labk3s.online"

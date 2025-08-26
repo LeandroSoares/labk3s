@@ -51,3 +51,9 @@ variable "optimize_resources" {
   type        = bool
   default     = false
 }
+
+variable "dashboards_directory" {
+  description = "Diretório contendo os dashboards do Grafana para provisionar"
+  type        = string
+  default     = "../grafana-dashboards"
+}

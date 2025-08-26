@@ -118,15 +118,33 @@ resource "helm_release" "prometheus_stack" {
     }
   ]
 
-  # Valores para o Grafana - Senha do Admin
+  # Valores para o Grafana - Senha do Admin e configuração de dashboards
   values = [
     <<-EOT
     grafana:
       adminPassword: "${var.prometheus_stack_values["grafana.adminPassword"]}"
+      dashboardProviders:
+        dashboardproviders.yaml:
+          apiVersion: 1
+          providers:
+            - name: 'k3s-dashboards'
+              orgId: 1
+              folder: 'K3s'
+              type: file
+              disableDeletion: false
+              editable: true
+              options:
+                path: /var/lib/grafana/dashboards/k3s
+      dashboards:
+        k3s:
+          k3s-cluster-dashboard:
+            file: dashboards/k3s-cluster-dashboard.json
+      dashboardsConfigMaps:
+        k3s: ${kubernetes_config_map.grafana_dashboards.metadata[0].name}
     EOT
   ]
 
-  depends_on = [kubernetes_namespace.observability]
+  depends_on = [kubernetes_namespace.observability, kubernetes_config_map.grafana_dashboards]
 }
 
 # Configuração para expor o Grafana (se NodePort ou LoadBalancer for usado)
@@ -154,4 +172,21 @@ resource "kubernetes_service" "grafana_nodeport" {
   }
 
   depends_on = [helm_release.prometheus_stack]
+}
+
+# ConfigMap para armazenar os dashboards do Grafana
+resource "kubernetes_config_map" "grafana_dashboards" {
+  metadata {
+    name      = "grafana-k3s-dashboards"
+    namespace = kubernetes_namespace.observability.metadata[0].name
+    labels = {
+      grafana_dashboard = "1"
+    }
+  }
+
+  data = {
+    "k3s-cluster-dashboard.json" = file("${path.root}/../grafana-dashboards/k3s-cluster-dashboard.json")
+  }
+
+  depends_on = [kubernetes_namespace.observability]
 }

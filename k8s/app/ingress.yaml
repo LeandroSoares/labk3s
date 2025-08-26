@@ -1,19 +1,28 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: joke-app-main-ingress  # Alterado para evitar conflito
+  name: joke-app-main-ingress
   namespace: joke-app
   annotations:
-    kubernetes.io/ingress.class: "traefik"
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"  # Opcional, se você configurar cert-manager
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
-  tls:  # Opcional, se você configurar cert-manager
+  ingressClassName: traefik  # Sintaxe moderna recomendada
+  tls:
   - hosts:
     - www.labk3s.online
     secretName: labk3s-tls
   rules:
-  - host: www.labk3s.online
+  - host: www.labk3s.online  # Regra para o domínio
     http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-service
+            port:
+              number: 80
+  - http:  # Regra sem host, aplicará a qualquer endereço IP ou hostname não especificado
       paths:
       - path: /
         pathType: Prefix

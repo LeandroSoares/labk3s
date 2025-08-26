@@ -14,12 +14,12 @@ optimize_resources = true
 grafana_enabled = true
 grafana_service_type = "ClusterIP"  # Use ClusterIP para acessar via Ingress
 expose_grafana = false  # Não expor via NodePort, usar Ingress
-grafana_admin_password = "admin"  # Altere para uma senha segura
+grafana_admin_password = "admin@123"  # Senha atualizada para maior segurança
 
 # Criar recursos de Ingress
 create_ingress = true
 
 # Configuração do cert-manager
 cert_manager_version = "v1.13.1"
-letsencrypt_email = "seu-email@exemplo.com"  # Substitua pelo seu email
+letsencrypt_email = "leandrogamedesigner@gmail.com"  # Email atualizado
 domain_name = "www.labk3s.online"

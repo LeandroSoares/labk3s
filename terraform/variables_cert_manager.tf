@@ -8,7 +8,7 @@ variable "cert_manager_version" {
 variable "letsencrypt_email" {
   description = "Email para registro no Let's Encrypt"
   type        = string
-  default     = "seu-email@exemplo.com"  # Substitua pelo seu email real
+  default     = "leandrogamedesigner@gmail.com"
 }
 
 variable "domain_name" {

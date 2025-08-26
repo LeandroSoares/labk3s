@@ -3,6 +3,10 @@
 ## Objetivo
 Demonstrar conhecimentos em DevOps, implementando um cluster Kubernetes (K3s) com stack de observabilidade (Prometheus + Grafana) e certificados TLS utilizando Terraform para automação de componentes de terceiros e Kustomize para recursos da aplicação.
 
+## Status do Projeto
+✅ **Implementado e funcionando**  
+O projeto foi completamente implementado e está funcionando corretamente, com todos os componentes integrados e acessíveis conforme planejado.
+
 ## Arquitetura do Projeto
 
 ### Terraform (Componentes de Terceiros)
@@ -17,68 +21,9 @@ Demonstrar conhecimentos em DevOps, implementando um cluster Kubernetes (K3s) co
   - Configurações de Ingress
   - Serviços
 
-## Próximos Passos (K3s já instalado)
-
-Se você já executou o script `install-k3s.sh` e tem o K3s funcionando no seu servidor, siga estas etapas para completar a configuração:
-
-1. **Otimize os recursos** (recomendado para VPS com 2 cores e 8GB RAM):
-   ```sh
-   # Faça upload do script para o servidor
-   scp optimize-resources.sh root@seu-servidor:/root/
-   
-   # No servidor
-   chmod +x optimize-resources.sh
-   ./optimize-resources.sh
-   ```
-
-2. **Configure o Traefik Ingress**:
-   ```sh
-   # Faça upload do script para o servidor
-   scp setup-traefik.sh root@seu-servidor:/root/
-   
-   # No servidor
-   chmod +x setup-traefik.sh
-   ./setup-traefik.sh
-   ```
-
-3. **Instale os componentes de terceiros via Terraform**:
-   ```sh
-   # Faça upload dos arquivos Terraform para o servidor
-   scp -r terraform root@seu-servidor:/root/
-   
-   # No servidor
-   cd /root/terraform
-   terraform init
-   terraform apply -var="optimize_resources=true" -var="letsencrypt_email=seu-email@exemplo.com"
-   
-   # Ou usando o arquivo de variáveis otimizado
-   terraform apply -var-file="terraform-optimized.tfvars" -var="letsencrypt_email=seu-email@exemplo.com"
-   ```
-
-4. **Implante sua aplicação usando Kustomize**:
-   ```sh
-   # Faça upload dos manifestos Kubernetes para o servidor
-   scp -r k8s root@seu-servidor:/root/
-   
-   # No servidor
-   kubectl apply -k /root/k8s/app
-   ```
-   ./setup-tls.sh www.labk3s.online seu-email@exemplo.com
-   ```
-
-5. **Verifique a configuração**:
-   ```sh
-   # Verifique os serviços do K3s
-   kubectl get nodes
-   kubectl get pods --all-namespaces
-   kubectl get svc --all-namespaces
-   ```
-
-Após completar estas etapas, sua aplicação estará disponível em https://www.labk3s.online com a stack de observabilidade configurada e otimizada para sua VPS com recursos limitados.
-
 ## Acesso
 A aplicação está acessível em: [https://www.labk3s.online](https://www.labk3s.online)  
-Dashboard Grafana: [https://grafana.labk3s.online](https://grafana.labk3s.online)
+Dashboard Grafana: [https://grafana.labk3s.online](https://grafana.labk3s.online) (usuário: admin, senha: definida no terraform.tfvars)  
 Dashboard Prometheus: [https://prometheus.labk3s.online](https://prometheus.labk3s.online)
 
 ---
@@ -91,265 +36,227 @@ VPS com K3s
   │   ├── Módulo de Observabilidade
   │   │   ├── Prometheus
   │   │   └── Grafana
-  │   └── Aplicação de Exemplo
+  │   └── Módulo cert-manager (Let's Encrypt)
   ├── Aplicação "Tell Me a Joke"
   │   ├── Frontend (Nginx + HTML/JS)
   │   ├── Backend (Node.js + Express)
-  │   └── Banco de Dados (SQLite)
-  └── CI/CD (GitHub Actions)
+  │   └── Armazenamento (SQLite)
+  └── Configuração de Rede
+      ├── Traefik Ingress Controller
+      └── TLS com Let's Encrypt
 ```
 
 ## Estrutura do Projeto
 
 ```
 laboratoriok3s/
-├── terraform/
+├── terraform/                    # Configuração do Terraform
 │   ├── modules/
-│   │   └── observability/
+│   │   ├── cert-manager/         # Módulo para gerenciamento de certificados TLS
+│   │   │   ├── main.tf
+│   │   │   ├── variables.tf
+│   │   │   └── outputs.tf
+│   │   └── observability/        # Módulo para monitoramento
 │   │       ├── main.tf
 │   │       ├── variables.tf
 │   │       └── outputs.tf
-│   ├── main.tf
-│   ├── variables.tf
-│   ├── outputs.tf
-│   └── terraform.tfvars.example
-├── k8s/
-│   ├── app/
-│   │   ├── namespace.yaml
-│   │   ├── frontend.yaml
-│   │   └── backend.yaml
-│   ├── prometheus.yaml
-│   └── grafana.yaml
-├── src/
-│   ├── frontend/
-│   │   ├── index.html
-│   │   ├── nginx.conf
-│   │   └── Dockerfile
-│   └── backend/
-│       ├── server.js
-│       ├── package.json
-│       └── Dockerfile
-├── .github/
-│   └── workflows/
-│       └── build-deploy.yml
-└── readme.md
+│   ├── main.tf                   # Configuração principal do Terraform
+│   ├── variables.tf              # Variáveis do Terraform
+│   ├── outputs.tf                # Outputs do Terraform
+│   ├── variables_cert_manager.tf # Variáveis específicas do cert-manager
+│   └── terraform-optimized.tfvars # Valores otimizados para recursos limitados
+├── k8s/                          # Configurações Kubernetes
+│   ├── app/                      # Manifestos da aplicação
+│   │   ├── namespace.yaml        # Namespace da aplicação
+│   │   ├── frontend.yaml         # Deployment e Service do frontend
+│   │   ├── frontend-nodeport.yaml # Serviço NodePort opcional
+│   │   ├── backend.yaml          # Deployment, Service e PVC do backend
+│   │   ├── ingress.yaml          # Ingress para a aplicação principal
+│   │   ├── api-route.yaml        # Ingress para as rotas da API
+│   │   ├── letsencrypt-issuer.yaml # Emissor para certificados
+│   │   └── kustomization.yaml    # Configuração do Kustomize
+├── src/                          # Código-fonte da aplicação
+│   ├── frontend/                 # Frontend da aplicação
+│   │   ├── index.html            # Página HTML principal
+│   │   ├── script.js             # JavaScript do frontend
+│   │   ├── nginx.conf            # Configuração do Nginx
+│   │   └── Dockerfile            # Dockerfile para o frontend
+│   └── backend/                  # Backend da aplicação
+│       ├── server.js             # Servidor Node.js
+│       ├── package.json          # Dependências do Node.js
+│       └── Dockerfile            # Dockerfile para o backend
+├── grafana-dashboards/           # Dashboards pré-configurados para o Grafana
+│   ├── k3s-cluster-dashboard.json # Dashboard para monitorar o cluster K3s
+│   └── README.md                 # Documentação dos dashboards
+├── install-k3s.sh                # Script para instalação do K3s
+├── cluster-issuer.yaml           # ClusterIssuer para Let's Encrypt
+└── readme.md                     # Este arquivo
 ```
 
 ---
 
 ## Aplicação "Tell Me a Joke"
 
-A aplicação de exemplo consiste em um site simples que exibe piadas aleatórias:
+A aplicação implementada consiste em um site simples que exibe e permite adicionar piadas aleatórias:
 
 ### Componentes
-- **Frontend**: Interface web simples com HTML, CSS e JavaScript, servida pelo Nginx
-- **Backend**: API REST em Node.js/Express que fornece piadas aleatórias
-- **Banco de dados**: SQLite para armazenamento das piadas
+- **Frontend**: Interface web responsiva com HTML, CSS (Tailwind) e JavaScript, servida pelo Nginx
+- **Backend**: API REST em Node.js/Express que fornece piadas aleatórias e métricas para o Prometheus
+- **Armazenamento**: Banco de dados SQLite com persistência via PersistentVolumeClaim
+
+### Funcionalidades
+1. **Exibição de piadas aleatórias**
+   - Clique no botão "Nova Piada" para obter uma piada aleatória do backend
+   - As piadas são selecionadas aleatoriamente do banco de dados SQLite
+
+2. **Adição de novas piadas**
+   - Clique no botão "Adicionar Piada" para abrir um formulário
+   - Insira sua piada e clique em "Salvar"
+   - A piada será adicionada ao banco de dados e poderá aparecer nas próximas requisições
+
+3. **Integração com Observabilidade**
+   - O backend expõe métricas Prometheus em `/metrics`
+   - Contador personalizado para requisições de piadas (`joke_requests_total`)
+   - Link direto para o dashboard do Grafana no canto inferior direito da aplicação
 
 ### Implantação
-Para implantar a aplicação:
+A aplicação é implantada no cluster K3s usando Kustomize:
 
 ```sh
-# Criar o namespace
-kubectl apply -f k8s/app/namespace.yaml
+# Criar o namespace e todos os recursos necessários
+kubectl apply -k k8s/app
 
-# Implantar backend e frontend
-kubectl apply -f k8s/app/backend.yaml
-kubectl apply -f k8s/app/frontend.yaml
+# Verificar o status da implantação
+kubectl get pods -n joke-app
+kubectl get svc -n joke-app
+kubectl get ingress -n joke-app
 ```
-
-### CI/CD com GitHub Actions
-
-O projeto inclui um pipeline de CI/CD configurado com GitHub Actions que:
-
-1. Constrói imagens Docker do frontend e backend
-2. Publica as imagens no Docker Hub
-3. Atualiza os manifestos Kubernetes com as novas versões
-4. (Opcional) Implanta automaticamente no cluster K3s
-
-Para configurar:
-1. Configurado environment "production" no GitHub com as seguintes secrets:
-   - `DOCKERHUB_USERNAME`: Usuário do Docker Hub
-   - `DOCKERHUB_PASSWORD`: Senha do Docker Hub
-   - `KUBECONFIG`: Conteúdo do arquivo kubeconfig para deploy automático
-
-2. O pipeline agora está configurado para:
-   - Construir e publicar imagens Docker para o registry
-   - Atualizar manifestos Kubernetes com as novas versões de imagens
-   - Implantar automaticamente no cluster K3s
-   - Verificar o status da implantação
-
-### Acesso à Aplicação
-
-A aplicação está configurada para ser acessada através do domínio:
-- **URL**: [https://www.labk3s.online](https://www.labk3s.online)
-
-O frontend web permite visualizar e interagir com piadas aleatórias, enquanto o backend fornece uma API RESTful com endpoints para listar, adicionar e obter piadas aleatórias.
-
-### Nova Funcionalidade: Adição de Piadas
-
-A aplicação agora possui uma interface para que os usuários adicionem suas próprias piadas:
-
-1. Acesse a aplicação em [https://www.labk3s.online](https://www.labk3s.online)
-2. Clique no botão "Add a Joke" na interface principal
-3. Digite sua piada no formulário que aparece
-4. Clique em "Salvar" para adicionar a piada ao banco de dados
-5. A piada será armazenada e poderá aparecer quando você solicitar piadas aleatórias
-
-**Implementação Técnica:**
-- Frontend: Modal com formulário HTML e JavaScript para submissão assíncrona
-- Backend: Endpoint POST `/jokes` para receber e armazenar novas piadas
-- API Routing: Middleware Traefik para rotear requisições `/api/*` para o backend
-- Armazenamento: Banco de dados SQLite com persistência via PersistentVolumeClaim
 
 ## Passo a Passo de Implementação
 
 ### 1. Pré-requisitos
-- VPS Linux já provisionada e acessível
-- K3s instalado e rodando
-- Terraform instalado localmente
-- Kubectl configurado para acessar o cluster K3s
-- Helm instalado localmente (opcional se usar apenas Terraform)
+- VPS Linux com Ubuntu/Debian
+- Domínio configurado para apontar para o IP da VPS
+- Portas 80, 443, 6443 (API K3s) liberadas no firewall
 
-### 2. Instalação via Terraform (Recomendado)
-
-1. Configure seu ambiente:
-   ```sh
-   cd terraform
-   cp terraform.tfvars.example terraform.tfvars
-   # Edite terraform.tfvars com suas configurações
-   ```
-
-2. Inicialize e aplique o Terraform:
-   ```sh
-   terraform init
-   terraform plan
-   terraform apply
-   ```
-
-3. Acesse os dashboards:
-   ```sh
-   # Os URLs serão exibidos nos outputs do Terraform
-   terraform output
-   ```
-
-### 3. Instalação via Helm (Alternativa)
-
-Se preferir usar Helm diretamente:
-
-1. Adicione os repositórios Helm:
-   ```sh
-   helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-   helm repo add grafana https://grafana.github.io/helm-charts
-   helm repo update
-   ```
-
-2. Instale o Prometheus Stack:
-   ```sh
-   helm install prom-stack prometheus-community/kube-prometheus-stack --namespace observability --create-namespace
-   ```
-
-3. Verifique os serviços:
-   ```sh
-   kubectl get svc -n observability
-   ```
-
-### 4. Customização
-
-#### Via Terraform
-Edite o arquivo `terraform.tfvars` para personalizar:
-- Versões dos componentes
-- Configurações do Grafana
-- Tipo de serviço (NodePort, ClusterIP, etc.)
-
-#### Via Helm
-Use um arquivo `values.yaml` customizado:
+### 2. Instalação do K3s
 ```sh
-helm install prom-stack prometheus-community/kube-prometheus-stack -f values.yaml --namespace observability
-```
-
----
-
-## Scripts de Automação
-
-O projeto inclui scripts shell para automatizar todo o processo de instalação e configuração:
-
-### 1. Instalação do K3s
-```sh
-# Na sua VPS, como usuário root
+# Na sua VPS
 chmod +x install-k3s.sh
 ./install-k3s.sh
 ```
 Este script:
-- Instala o K3s na versão especificada
+- Instala o K3s na versão especificada (v1.27.5+k3s1)
 - Configura o firewall para permitir o tráfego necessário
 - Desativa swap (requisito do Kubernetes)
 - Instala kubectl e Helm
 - Configura acesso ao cluster
 
-### 2. Configuração do Traefik Ingress
+### 3. Configuração do TLS
 ```sh
-# Na sua VPS, após instalar o K3s
-chmod +x setup-traefik.sh
-./setup-traefik.sh
+# Configurar o ClusterIssuer para Let's Encrypt
+kubectl apply -f cluster-issuer.yaml
 ```
-Este script:
-- Configura o Traefik Ingress Controller do K3s
-- Define redirecionamento automático HTTP para HTTPS
-- Expõe o serviço Traefik usando o IP da VPS
-- Não é necessário Nginx adicional para expor serviços
 
-### 3. Configuração da Stack de Observabilidade via Terraform
+### 4. Instalação via Terraform
 ```sh
-# Na sua VPS, após configurar o Traefik
-# Navegue até o diretório do Terraform
-cd terraform
-
-# Inicialize o Terraform
+# No diretório terraform
 terraform init
-
-# Para VPS com recursos limitados (2 cores, 8GB RAM)
-terraform apply -var="optimize_resources=true"
+terraform apply -var="optimize_resources=true" -var="letsencrypt_email=seu-email@exemplo.com" -var="domain_name=labk3s.online"
 ```
+
 Este processo:
-- Cria o namespace para observabilidade
-- Instala o Prometheus e Grafana via Terraform/Helm
-- Configura limites de recursos otimizados
-- Prepara serviços para acesso via Ingress
+- Instala o cert-manager para gerenciamento de certificados TLS
+- Configura a stack de observabilidade (Prometheus e Grafana)
+- Cria os Ingress necessários para acessar Grafana e Prometheus
 
-### 4. Configuração de TLS com Let's Encrypt
+### 5. Implantação da Aplicação
 ```sh
-# Na sua VPS, após configurar o Traefik
-chmod +x setup-tls.sh
-./setup-tls.sh www.labk3s.online seu-email@exemplo.com
+# Implantar todos os recursos da aplicação usando Kustomize
+kubectl apply -k k8s/app
 ```
-Este script:
-- Instala e configura o cert-manager
-- Cria um ClusterIssuer para Let's Encrypt
-- Configura emissão automática de certificados HTTPS
-- Prepara o cluster para usar TLS com o domínio www.labk3s.online
 
-### 5. Otimização de Recursos (para VPS com recursos limitados)
+### 6. Verificação da Implantação
 ```sh
-# Na sua VPS, após a instalação básica
-chmod +x optimize-resources.sh
-./optimize-resources.sh
+# Verificar os pods
+kubectl get pods -n joke-app
+
+# Verificar os serviços
+kubectl get svc -n joke-app
+
+# Verificar os ingresses
+kubectl get ingress -n joke-app
+
+# Verificar certificados
+kubectl get certificates -n joke-app
 ```
-Este script:
-- Ajusta limites de eviction do kubelet para prevenir OOM kills
-- Configura limites de recursos para Prometheus e Grafana
-- Otimiza parâmetros do kernel para melhor desempenho
-- Aplica configurações de recursos para os deployments da aplicação
-- Recomenda configurações adicionais para economizar recursos
-- Gera informações de acesso
+
+---
+
+## Stack de Observabilidade
+
+### Componentes
+- **Prometheus**: Sistema de monitoramento e alerta
+  - Coleta métricas de todos os componentes do cluster
+  - Configurado para uso otimizado de recursos (CPU/memória)
+  - Exposto em [https://prometheus.labk3s.online](https://prometheus.labk3s.online)
+
+- **Grafana**: Visualização de métricas e dashboards
+  - Pré-configurado com dashboard para monitoramento do cluster K3s
+  - Interface gráfica intuitiva para análise de métricas
+  - Exposto em [https://grafana.labk3s.online](https://grafana.labk3s.online)
+
+### Dashboards Incluídos
+- **K3s Cluster Dashboard**: Visão geral do estado do cluster
+  - Métricas de uso de CPU e memória por nó
+  - Estado dos pods e deployments
+  - Uso de rede e disco
+
+### Monitoramento da Aplicação
+O backend da aplicação expõe métricas no formato Prometheus:
+- Contador de requisições à API (`joke_requests_total`)
+- Métricas padrão do Node.js (memória, CPU, GC)
+- Acessível em `/metrics` no backend
+
+### Otimizações para VPS com Recursos Limitados
+- Prometheus configurado com retenção reduzida (5 dias)
+- Alertmanager desativado para economizar recursos
+- Limites de CPU e memória ajustados para todos os componentes
+- Grafana com recursos minimizados
 
 ---
 
 ## Boas Práticas DevOps Implementadas
 
-1. **Infraestrutura como Código (IaC)**
-   - Uso do Terraform para provisionar e gerenciar recursos
-   - Organização em módulos reutilizáveis
+### 1. Infraestrutura como Código (IaC)
+- Uso do Terraform para provisionar e gerenciar componentes de terceiros
+- Organização em módulos reutilizáveis para melhor manutenção
+- Variáveis configuráveis para personalização fácil
+
+### 2. Containerização
+- Aplicações encapsuladas em contêineres Docker
+- Dockerfile otimizados para cada componente
+- Configuração declarativa com manifestos Kubernetes
+
+### 3. Gerenciamento de Configuração
+- Kustomize para recursos da aplicação
+- ConfigMaps para dashboards do Grafana
+- Valores configuráveis para ambientes com diferentes recursos
+
+### 4. Observabilidade
+- Monitoramento completo com Prometheus
+- Visualização com Grafana
+- Métricas personalizadas para a aplicação
+
+### 5. Segurança
+- TLS automatizado com Let's Encrypt
+- Redirecionamento automático HTTP para HTTPS
+- Controle de recursos para evitar negação de serviço
+
+### 6. Automação
+- Scripts de instalação e configuração
+- Terraform para provisionamento automatizado
+- Kustomize para gerenciar recursos relacionados
 
 2. **Contêinerização**
    - Aplicações em containers no Kubernetes
@@ -359,50 +266,97 @@ Este script:
 
 ### É necessário um Nginx adicional para expor serviços do K3s?
 
-Não. O K3s já vem com o Traefik Ingress Controller embutido, que funciona como proxy reverso e controller de ingress. O script `setup-traefik.sh` configura o Traefik para expor serviços diretamente usando o IP da VPS, eliminando a necessidade de um Nginx adicional.
+Não. O K3s já vem com o Traefik Ingress Controller embutido, que funciona como proxy reverso e controller de ingress. O Traefik está configurado para expor serviços diretamente usando o IP da VPS, eliminando a necessidade de um Nginx adicional.
 
 ### Como são gerenciados os certificados TLS?
 
-O projeto utiliza cert-manager para gerenciar certificados TLS automaticamente através do Let's Encrypt. O script `setup-tls.sh` configura todo o processo, e os certificados são renovados automaticamente antes de expirarem.
+O projeto utiliza cert-manager para gerenciar certificados TLS automaticamente através do Let's Encrypt. O arquivo `cluster-issuer.yaml` configura o emissor de certificados, e os ingresses utilizam a anotação `cert-manager.io/cluster-issuer: "letsencrypt-prod"` para solicitar certificados automaticamente.
 
 ### Como monitorar a saúde da aplicação?
 
-A stack de observabilidade (Prometheus + Grafana) coleta métricas de todos os componentes do cluster, incluindo a aplicação. O Grafana vem pré-configurado com dashboards para monitorar o cluster K3s, além de dashboards específicos para a aplicação "Tell Me a Joke".
+A stack de observabilidade (Prometheus + Grafana) coleta métricas de todos os componentes do cluster, incluindo a aplicação. O Grafana vem pré-configurado com dashboards para monitorar o cluster K3s, além de métricas específicas da aplicação "Tell Me a Joke" através da rota `/metrics` exposta pelo backend.
 
 ### Como otimizar o uso de recursos em uma VPS com recursos limitados?
 
-Para VPS com 2 cores e 8GB de RAM, recomendamos:
+Para VPS com recursos limitados (2 cores, 8GB de RAM), o projeto já inclui várias otimizações:
 
-1. **Ative a otimização no Terraform**:
+1. **Parâmetro de otimização no Terraform**:
    ```sh
    terraform apply -var="optimize_resources=true"
    ```
-   Ou use o arquivo de variáveis otimizado:
+   
+2. **Arquivo de variáveis otimizado**:
    ```sh
    terraform apply -var-file="terraform-optimized.tfvars"
    ```
-
-2. **Execute o script de otimização do sistema**:
-   ```sh
-   ./optimize-resources.sh
-   ```
    
 3. **Configurações aplicadas automaticamente**:
-   - Recursos do Prometheus limitados a 200m CPU e 512Mi memória
+   - Recursos do Prometheus limitados a 200m CPU e 1Gi memória
    - Recursos do Grafana limitados a 100m CPU e 256Mi memória
    - AlertManager desativado para economizar recursos
    - Período de retenção reduzido para 5 dias
-   - Parâmetros do kernel otimizados
-   - Limites de eviction do kubelet ajustados
+   - Limites de recursos configurados para frontend e backend
 
 ---
 
 ## Principais Recursos
 
-1. **Infraestrutura**
-   - K3s como distribuição leve do Kubernetes
-   - Infraestrutura como código com Terraform
-   - Módulos Terraform reutilizáveis
+### 1. Infraestrutura
+- K3s como distribuição leve do Kubernetes
+- Terraform para gerenciamento de recursos de terceiros
+- Kustomize para recursos da aplicação
+
+### 2. Aplicação
+- Frontend responsivo com Tailwind CSS
+- Backend Node.js com métricas Prometheus
+- Persistência de dados com SQLite e PVC
+
+### Arquitetura de Rede
+
+A arquitetura de rede do projeto utiliza o Traefik Ingress Controller nativo do K3s:
+
+1. **Traefik Ingress Controller**: 
+   - Vem pré-instalado com o K3s
+   - Funciona como ponto de entrada para todo o tráfego HTTP/HTTPS
+   - Gerencia rotas para diferentes serviços
+
+2. **Ingress para Aplicação**:
+   - Definidos em `k8s/app/ingress.yaml` e `k8s/app/api-route.yaml`
+   - Configura rotas para o frontend e API backend
+   - Utiliza certificados TLS gerenciados pelo cert-manager
+
+3. **Ingress para Observabilidade**:
+   - Criados automaticamente pelo Terraform
+   - Configura rotas para Grafana e Prometheus
+   - Utiliza os mesmos certificados TLS e ClusterIssuer
+
+4. **Certificados TLS**:
+   - Gerenciados automaticamente pelo cert-manager
+   - Utilizando o Let's Encrypt como provedor
+   - Renovação automática antes da expiração
+
+### 4. Observabilidade
+- Prometheus para coleta de métricas
+- Grafana para visualização
+- Dashboards pré-configurados
+
+---
+
+## Conclusão
+
+Este projeto demonstra a implementação de uma infraestrutura Kubernetes completa usando K3s, com foco em observabilidade e boas práticas DevOps. A aplicação "Tell Me a Joke" serve como exemplo funcional que utiliza todos os recursos implementados.
+
+Os principais pontos de destaque incluem:
+
+1. **Integração completa**: Todos os componentes trabalham juntos harmoniosamente - aplicação, ingress, certificados TLS e stack de observabilidade.
+
+2. **Automação e IaC**: O uso do Terraform para provisionar componentes de infraestrutura e Kustomize para recursos da aplicação demonstra boas práticas de Infraestrutura como Código.
+
+3. **Observabilidade**: O monitoramento com Prometheus e visualização com Grafana proporcionam visibilidade completa do estado do cluster e da aplicação.
+
+4. **Otimização de recursos**: O projeto foi cuidadosamente otimizado para funcionar em VPS com recursos limitados, mantendo todas as funcionalidades.
+
+O sistema está completamente funcional e acessível através dos domínios configurados, com toda a infraestrutura necessária implementada e monitorada.
 
 ---
 
@@ -413,3 +367,6 @@ Para VPS com 2 cores e 8GB de RAM, recomendamos:
 - [Prometheus](https://prometheus.io/)
 - [Grafana](https://grafana.com/)
 - [kube-prometheus-stack Helm Chart](https://artifacthub.io/packages/helm/prometheus-community/kube-prometheus-stack)
+- [Traefik](https://traefik.io/)
+- [cert-manager](https://cert-manager.io/)
+- [Let's Encrypt](https://letsencrypt.org/)

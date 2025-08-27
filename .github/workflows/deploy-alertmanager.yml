@@ -1,0 +1,55 @@
+name: deploy-alertmanager
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'k8s/alertmanager/**'
+      - '.github/workflows/deploy-alertmanager.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'k8s/alertmanager/**'
+  # Permite execução manual do workflow
+  workflow_dispatch:
+
+env:
+  VERSION: ${{ github.sha }}
+
+jobs:
+   
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+          
+          # Verificar se consegue conectar ao cluster (diagnóstico)
+          echo "Verificando conexão com o cluster..."
+          kubectl cluster-info
+
+      - name: Setup Kustomize
+        uses: imranismail/setup-kustomize@v1
+ 
+      - name: Deploy to Kubernetes
+        run: |
+          # Exibir os arquivos que serão aplicados
+          echo "Arquivos a serem aplicados:"
+          ls -la k8s/alertmanager
+          
+          # Aplicar todos os recursos usando kustomize
+          kubectl apply -k k8s/alertmanager --validate=true

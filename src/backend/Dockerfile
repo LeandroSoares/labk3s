@@ -19,6 +19,11 @@ COPY --chown=node:node . .
 RUN chmod -R 755 /app \
     && chmod -R 777 /data
 
+# Definir variáveis de ambiente para OpenTelemetry
+ENV NODE_OPTIONS="--require ./tracing.js"
+ENV OTEL_EXPORTER_OTLP_ENDPOINT="http://tempo:4318/v1/traces"
+ENV OTEL_SERVICE_NAME="joke-api"
+
 # Definir volume para persistência do SQLite
 VOLUME ["/data"]
 

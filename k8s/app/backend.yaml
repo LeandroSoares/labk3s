@@ -27,6 +27,10 @@ spec:
         env:
         - name: NODE_ENV
           value: "production"
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "http://grafana-agent.observability.svc.cluster.local:4318/v1/traces"
+        - name: OTEL_SERVICE_NAME
+          value: "joke-api"
         resources:
           limits:
             cpu: "0.3"

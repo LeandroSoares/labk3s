@@ -1,7 +1,12 @@
+// Inicializar o tracing antes de importar outros módulos
+const { initTracing } = require('./tracing');
+initTracing();
+
 const express = require("express");
 const sqlite3 = require("sqlite3").verbose();
 const promClient = require("prom-client");
 const path = require("path");
+const { trace, context, SpanStatusCode } = require('@opentelemetry/api');
 
 // Configuração do Prometheus
 const register = new promClient.Registry();
@@ -78,17 +83,36 @@ db.serialize(() => {
 app.get("/jokes/random", (req, res) => {
   jokeRequestCounter.inc({ endpoint: "random" });
 
-  db.get("SELECT * FROM jokes ORDER BY RANDOM() LIMIT 1", (err, row) => {
-    if (err) {
-      console.error("Erro ao buscar piada:", err);
-      return res.status(500).json({ error: "Erro ao buscar piada" });
-    }
+  // Criar um span para a operação
+  const tracer = trace.getTracer('joke-api');
+  tracer.startActiveSpan('get_random_joke', span => {
+    span.setAttribute('endpoint', '/jokes/random');
+    
+    db.get("SELECT * FROM jokes ORDER BY RANDOM() LIMIT 1", (err, row) => {
+      if (err) {
+        console.error("Erro ao buscar piada:", err);
+        span.setStatus({
+          code: SpanStatusCode.ERROR,
+          message: `Erro ao buscar piada: ${err.message}`
+        });
+        span.end();
+        return res.status(500).json({ error: "Erro ao buscar piada" });
+      }
 
-    if (!row) {
-      return res.status(404).json({ error: "Nenhuma piada encontrada" });
-    }
+      if (!row) {
+        span.setStatus({
+          code: SpanStatusCode.ERROR,
+          message: 'Nenhuma piada encontrada'
+        });
+        span.end();
+        return res.status(404).json({ error: "Nenhuma piada encontrada" });
+      }
 
-    res.json(row);
+      span.setStatus({ code: SpanStatusCode.OK });
+      span.setAttribute('joke.id', row.id);
+      span.end();
+      res.json(row);
+    });
   });
 });
 
@@ -96,13 +120,27 @@ app.get("/jokes/random", (req, res) => {
 app.get("/jokes", (req, res) => {
   jokeRequestCounter.inc({ endpoint: "list" });
 
-  db.all("SELECT * FROM jokes", (err, rows) => {
-    if (err) {
-      console.error("Erro ao listar piadas:", err);
-      return res.status(500).json({ error: "Erro ao listar piadas" });
-    }
+  // Criar um span para a operação
+  const tracer = trace.getTracer('joke-api');
+  tracer.startActiveSpan('list_jokes', span => {
+    span.setAttribute('endpoint', '/jokes');
+    
+    db.all("SELECT * FROM jokes", (err, rows) => {
+      if (err) {
+        console.error("Erro ao listar piadas:", err);
+        span.setStatus({
+          code: SpanStatusCode.ERROR,
+          message: `Erro ao listar piadas: ${err.message}`
+        });
+        span.end();
+        return res.status(500).json({ error: "Erro ao listar piadas" });
+      }
 
-    res.json(rows);
+      span.setStatus({ code: SpanStatusCode.OK });
+      span.setAttribute('jokes.count', rows.length);
+      span.end();
+      res.json(rows);
+    });
   });
 });
 
@@ -110,18 +148,40 @@ app.get("/jokes", (req, res) => {
 app.post("/jokes", (req, res) => {
   jokeRequestCounter.inc({ endpoint: "create" });
 
-  const { text } = req.body;
-  if (!text) {
-    return res.status(400).json({ error: "O texto da piada é obrigatório" });
-  }
-
-  db.run("INSERT INTO jokes (text) VALUES (?)", [text], function(err) {
-    if (err) {
-      console.error("Erro ao inserir piada:", err);
-      return res.status(500).json({ error: "Erro ao inserir piada" });
+  // Criar um span para a operação
+  const tracer = trace.getTracer('joke-api');
+  tracer.startActiveSpan('create_joke', span => {
+    span.setAttribute('endpoint', '/jokes');
+    span.setAttribute('method', 'POST');
+    
+    const { text } = req.body;
+    if (!text) {
+      span.setStatus({
+        code: SpanStatusCode.ERROR,
+        message: 'Texto da piada obrigatório'
+      });
+      span.end();
+      return res.status(400).json({ error: "O texto da piada é obrigatório" });
     }
 
-    res.status(201).json({ id: this.lastID, text });
+    span.setAttribute('joke.text.length', text.length);
+    
+    db.run("INSERT INTO jokes (text) VALUES (?)", [text], function(err) {
+      if (err) {
+        console.error("Erro ao inserir piada:", err);
+        span.setStatus({
+          code: SpanStatusCode.ERROR,
+          message: `Erro ao inserir piada: ${err.message}`
+        });
+        span.end();
+        return res.status(500).json({ error: "Erro ao inserir piada" });
+      }
+
+      span.setStatus({ code: SpanStatusCode.OK });
+      span.setAttribute('joke.id', this.lastID);
+      span.end();
+      res.status(201).json({ id: this.lastID, text });
+    });
   });
 });
 

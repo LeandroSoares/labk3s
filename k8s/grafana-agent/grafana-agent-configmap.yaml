@@ -1,0 +1,110 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-agent-config
+  namespace: observability
+data:
+  agent.yaml: |
+    server:
+      log_level: info
+      http_listen_port: 12345
+
+    metrics:
+      wal_directory: /tmp/wal
+      global:
+        scrape_interval: 15s
+        external_labels:
+          cluster: k3s-lab
+      configs:
+        - name: k3s-metrics
+          remote_write:
+            - url: http://prom-stack-kube-prometheus-prometheus.observability.svc.cluster.local:9090/api/v1/write
+              basic_auth:
+                username: prometheus
+                password: prometheus
+          scrape_configs:
+            # Configuração para scrapear métricas do próprio agent
+            - job_name: grafana-agent
+              static_configs:
+                - targets: ['localhost:12345']
+            # Configuração para scrapear métricas da app
+            - job_name: joke-app
+              kubernetes_sd_configs:
+                - role: pod
+                  namespaces:
+                    names: ['joke-app']
+              relabel_configs:
+                - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+                  action: keep
+                  regex: true
+                - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+                  action: replace
+                  target_label: __metrics_path__
+                  regex: (.+)
+                - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+                  action: replace
+                  regex: (.+):(?:\d+);(\d+)
+                  replacement: ${1}:${2}
+                  target_label: __address__
+                - source_labels: [__meta_kubernetes_pod_name]
+                  action: replace
+                  target_label: pod
+
+    logs:
+      configs:
+      - name: k3s-logs
+        positions:
+          filename: /tmp/positions.yaml
+        clients:
+          - url: http://prom-stack-grafana.observability.svc.cluster.local:3100/loki/api/v1/push
+        target_config:
+          sync_period: 10s
+        scrape_configs:
+          - job_name: kubernetes-pods
+            kubernetes_sd_configs:
+              - role: pod
+            pipeline_stages:
+              - docker: {}
+              - cri: {}
+            relabel_configs:
+              - action: labelmap
+                regex: __meta_kubernetes_pod_label_(.+)
+              - source_labels:
+                  - __meta_kubernetes_pod_name
+                target_label: pod
+              - source_labels:
+                  - __meta_kubernetes_namespace
+                target_label: namespace
+              - source_labels:
+                  - __meta_kubernetes_pod_container_name
+                target_label: container
+              - source_labels:
+                  - __meta_kubernetes_pod_node_name
+                target_label: node
+
+    traces:
+      configs:
+      - name: k3s-traces
+        receivers:
+          otlp:
+            protocols:
+              grpc:
+                endpoint: 0.0.0.0:4317
+              http:
+                endpoint: 0.0.0.0:4318
+          jaeger:
+            protocols:
+              thrift_http:
+                endpoint: 0.0.0.0:14268
+        remote_write:
+          - endpoint: tempo:4317
+            insecure: true
+        batch:
+          timeout: 5s
+          send_batch_size: 100
+        automatic_logging:
+          backend: logs_instance
+          logs_instance_name: k3s-logs
+          roots: true
+          processes: true
+          spans: true

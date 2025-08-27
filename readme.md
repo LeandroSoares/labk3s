@@ -48,11 +48,15 @@ VPS com K3s
   ├── Terraform (Infraestrutura como Código)
   │   ├── Módulo de Observabilidade
   │   │   ├── Prometheus
-  │   │   └── Grafana
+  │   │   ├── Grafana
+  │   │   ├── Grafana Tempo (Tracing)
+  │   │   └── Grafana Agent (Telemetria Unificada)
   │   └── Módulo cert-manager (Let's Encrypt)
   ├── Aplicação "Tell Me a Joke"
   │   ├── Frontend (Nginx + HTML/JS)
+  │   │   └── Instrumentação OpenTelemetry (Browser)
   │   ├── Backend (Node.js + Express)
+  │   │   └── Instrumentação OpenTelemetry (Node.js)
   │   └── Armazenamento (SQLite)
   └── Configuração de Rede
       ├── Traefik Ingress Controller
@@ -69,7 +73,15 @@ laboratoriok3s/
 │   │   │   ├── main.tf
 │   │   │   ├── variables.tf
 │   │   │   └── outputs.tf
-│   │   └── observability/        # Módulo para monitoramento
+│   │   ├── observability/        # Módulo para monitoramento
+│   │   │   ├── main.tf
+│   │   │   ├── variables.tf
+│   │   │   └── outputs.tf
+│   │   ├── tempo/                # Módulo para distributed tracing
+│   │   │   ├── main.tf
+│   │   │   ├── variables.tf
+│   │   │   └── outputs.tf
+│   │   └── grafana-agent/        # Módulo para telemetria unificada
 │   │       ├── main.tf
 │   │       ├── variables.tf
 │   │       └── outputs.tf
@@ -87,7 +99,11 @@ laboratoriok3s/
 │   │   ├── ingress.yaml          # Ingress para a aplicação principal
 │   │   ├── api-route.yaml        # Ingress para as rotas da API
 │   │   ├── letsencrypt-issuer.yaml # Emissor para certificados
-│   │   └── kustomization.yaml    # Configuração do Kustomize
+│   │   ├── kustomization.yaml    # Configuração do Kustomize
+│   │   └── overlays/             # Overlays do Kustomize
+│   │       ├── base/             # Configuração base
+│   │       ├── with-tracing/     # Overlay para OpenTelemetry Collector
+│   │       └── with-grafana-agent/ # Overlay para Grafana Agent
 ├── src/                          # Código-fonte da aplicação
 │   ├── frontend/                 # Frontend da aplicação
 │   │   ├── index.html            # Página HTML principal
@@ -136,8 +152,11 @@ A aplicação implementada consiste em um site simples que exibe e permite adici
 A aplicação é implantada no cluster K3s usando Kustomize:
 
 ```sh
-# Criar o namespace e todos os recursos necessários
+# Criar o namespace e recursos básicos (sem tracing)
 kubectl apply -k k8s/app
+
+# OU implante com suporte a tracing usando Grafana Agent
+kubectl apply -k k8s/app/overlays/with-grafana-agent
 
 # Verificar o status da implantação
 kubectl get pods -n joke-app
@@ -219,17 +238,49 @@ kubectl get certificates -n joke-app
   - Interface gráfica intuitiva para análise de métricas
   - Exposto em [https://grafana.labk3s.online](https://grafana.labk3s.online)
 
+- **Grafana Tempo**: Sistema de rastreamento distribuído
+  - Armazenamento e consulta de traces
+  - Integração com OpenTelemetry
+  - Visualização de traces no Grafana
+  - Exposto em [https://tempo.labk3s.online](https://tempo.labk3s.online)
+
+- **Grafana Agent**: Coletor unificado para telemetria
+  - Substitui o OpenTelemetry Collector tradicional
+  - Coleta de métricas, logs e traces em um único agente
+  - Baixo consumo de recursos
+  - Integração nativa com Prometheus, Tempo e futuramente Loki
+
 ### Dashboards Incluídos
 - **K3s Cluster Dashboard**: Visão geral do estado do cluster
   - Métricas de uso de CPU e memória por nó
   - Estado dos pods e deployments
   - Uso de rede e disco
+- **Tracing Dashboard**: Visualização de traces distribuídos
+  - Tempo de resposta de requisições
+  - Identificação de gargalos de performance
+  - Visualização de fluxos entre serviços
 
 ### Monitoramento da Aplicação
 O backend da aplicação expõe métricas no formato Prometheus:
 - Contador de requisições à API (`joke_requests_total`)
 - Métricas padrão do Node.js (memória, CPU, GC)
 - Acessível em `/metrics` no backend
+
+Além disso, o backend e frontend estão instrumentados com OpenTelemetry para tracing:
+- Rastreamento automático de requisições HTTP
+- Correlação entre chamadas do frontend e backend
+- Geração de IDs de trace para depuração
+- Monitoramento de performance em tempo real
+
+### Tracing Distribuído
+A implementação de tracing permite:
+
+1. **Visualização End-to-End**: Rastrear o caminho completo de uma requisição
+2. **Identificação de Gargalos**: Localizar pontos de lentidão
+3. **Depuração**: Correlacionar logs, métricas e traces
+4. **Análise de Performance**: Visualizar o tempo gasto em cada componente
+
+Para mais detalhes, consulte o [Guia de Tracing](docs/tracing-guide.md).
 
 ### Otimizações para VPS com Recursos Limitados
 - Prometheus configurado com retenção reduzida (5 dias)
@@ -260,6 +311,8 @@ O backend da aplicação expõe métricas no formato Prometheus:
 - Monitoramento completo com Prometheus
 - Visualização com Grafana
 - Métricas personalizadas para a aplicação
+- Tracing distribuído com Grafana Tempo
+- Telemetria unificada com Grafana Agent
 
 ### 5. Segurança
 - TLS automatizado com Let's Encrypt
@@ -288,6 +341,18 @@ O projeto utiliza cert-manager para gerenciar certificados TLS automaticamente a
 ### Como monitorar a saúde da aplicação?
 
 A stack de observabilidade (Prometheus + Grafana) coleta métricas de todos os componentes do cluster, incluindo a aplicação. O Grafana vem pré-configurado com dashboards para monitorar o cluster K3s, além de métricas específicas da aplicação "Tell Me a Joke" através da rota `/metrics` exposta pelo backend.
+
+Para monitoramento avançado, também implementamos o tracing distribuído com Grafana Tempo e Grafana Agent, permitindo visualizar o fluxo completo de requisições e identificar problemas de performance.
+
+### Como utilizar o tracing distribuído?
+
+O tracing distribuído está disponível através do Grafana Tempo e pode ser acessado das seguintes formas:
+
+1. **No Grafana**: Acesse o Grafana e selecione o datasource "Tempo" no painel Explore
+2. **Dashboard dedicado**: Utilize o dashboard "Distributed Tracing" pré-configurado no Grafana
+3. **Interface do Tempo**: Acesse diretamente em [https://tempo.labk3s.online](https://tempo.labk3s.online)
+
+Para gerar traces, basta usar a aplicação normalmente. Todas as requisições ao backend e interações do frontend são automaticamente rastreadas. Para mais detalhes, consulte o [Guia de Tracing](docs/tracing-guide.md).
 
 ### Como otimizar o uso de recursos em uma VPS com recursos limitados?
 

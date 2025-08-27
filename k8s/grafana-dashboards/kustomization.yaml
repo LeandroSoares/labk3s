@@ -26,3 +26,11 @@ configMapGenerator:
       labels:
         grafana_dashboard: "1"
         dashboard-provider: "alertmanager"
+        
+  - name: prom-stack-grafana-dashboard-tracing
+    files:
+      - tracing-dashboard.json=../../grafana-dashboards/tracing-dashboard.json
+    options:
+      labels:
+        grafana_dashboard: "1"
+        dashboard-provider: "tracing"

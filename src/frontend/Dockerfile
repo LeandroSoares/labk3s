@@ -7,7 +7,8 @@ COPY telemetry.js /usr/share/nginx/html/
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Definir permissões seguras e remover permissões desnecessárias
-RUN chmod -R 644 /usr/share/nginx/html \
+RUN chmod -R 755 /usr/share/nginx/html \
+    && find /usr/share/nginx/html -type f -exec chmod 644 {} \; \
     && chmod 644 /etc/nginx/conf.d/default.conf \
     && chown -R nginx:nginx /usr/share/nginx/html \
     && chown -R nginx:nginx /var/cache/nginx \

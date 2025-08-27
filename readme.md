@@ -39,6 +39,12 @@ A aplicação está acessível em: [https://www.labk3s.online](https://www.labk3
 Dashboard Grafana: [https://grafana.labk3s.online](https://grafana.labk3s.online) (usuário: admin, senha: definida no terraform.tfvars)  
 Dashboard Prometheus: [https://prometheus.labk3s.online](https://prometheus.labk3s.online)
 
+## Documentação Adicional
+
+- [Guia do Alertmanager](docs/alertmanager-guide.md): Documentação sobre como configurar e utilizar o Alertmanager
+- [Troubleshooting Frontend-Backend](docs/troubleshooting-frontend-backend.md): Soluções para problemas de comunicação entre frontend e backend
+- [Guia de Tracing](docs/tracing-guide.md): Instruções para configuração e uso do sistema de tracing distribuído
+
 ---
 
 ## Arquitetura do Projeto Atualizada
@@ -100,6 +106,15 @@ laboratoriok3s/
 │   │   ├── network-policies.yaml # Políticas de rede incluindo regras para telemetria
 │   │   ├── letsencrypt-issuer.yaml # Emissor para certificados
 │   │   └── kustomization.yaml    # Configuração do Kustomize
+│   ├── alertmanager/             # Configurações adicionais para o Alertmanager
+│   │   ├── alertmanager-config.yaml # Configuração do Alertmanager
+│   │   ├── prometheus-rules.yaml    # Regras de alerta personalizadas
+│   │   └── kustomization.yaml       # Configuração do Kustomize
+│   └── grafana-dashboards/       # Configurações para dashboards do Grafana
+│       ├── dashboard-provider.yaml  # Provedor de dashboards
+│       ├── grafana-patch.yaml       # Patch para o Grafana
+│       ├── namespace.yaml           # Namespace para os dashboards
+│       └── kustomization.yaml       # Configuração do Kustomize
 ├── src/                          # Código-fonte da aplicação
 │   ├── frontend/                 # Frontend da aplicação
 │   │   ├── index.html            # Página HTML principal

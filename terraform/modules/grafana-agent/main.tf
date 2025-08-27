@@ -35,113 +35,114 @@ resource "helm_release" "grafana_agent" {
   values = [
     <<-EOT
     agent:
-      mode: "flow"
+      mode: "static"
       enableReporting: false
       configMap:
         create: true
         content: |
-          logging {
-            level = "${var.log_level}"
-          }
+          server:
+            log_level: ${var.log_level}
+            http_listen_port: 12345
 
-          prometheus.remote_write "default" {
-            endpoint {
-              url = "http://prom-stack-kube-prometheus-prometheus.${local.namespace}.svc.cluster.local:9090/api/v1/write"
-              
-              basic_auth {
-                username = "prometheus"
-                password = "prometheus"
-              }
-            }
-          }
+          metrics:
+            wal_directory: /tmp/wal
+            global:
+              scrape_interval: 15s
+              external_labels:
+                cluster: k3s-lab
+            configs:
+              - name: k3s-metrics
+                remote_write:
+                  - url: http://prom-stack-kube-prometheus-prometheus.${local.namespace}.svc.cluster.local:9090/api/v1/write
+                    basic_auth:
+                      username: prometheus
+                      password: prometheus
+                scrape_configs:
+                  # Configuração para scrapear métricas do próprio agent
+                  - job_name: grafana-agent
+                    static_configs:
+                      - targets: ['localhost:12345']
+                  # Configuração para scrapear métricas da app
+                  - job_name: joke-app
+                    kubernetes_sd_configs:
+                      - role: pod
+                        namespaces:
+                          names: ['joke-app']
+                    relabel_configs:
+                      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+                        action: keep
+                        regex: true
+                      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+                        action: replace
+                        target_label: __metrics_path__
+                        regex: (.+)
+                      - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+                        action: replace
+                        regex: (.+):(?:\\d+);(\\d+)
+                        replacement: $${1}:$${2}
+                        target_label: __address__
+                      - source_labels: [__meta_kubernetes_pod_name]
+                        action: replace
+                        target_label: pod
 
-          prometheus.scrape "agent" {
-            targets = [{
-              __address__ = "localhost:12345",
-            }]
-            forward_to = [prometheus.remote_write.default.receiver]
-          }
+          logs:
+            configs:
+            - name: k3s-logs
+              positions:
+                filename: /tmp/positions.yaml
+              clients:
+                - url: http://prom-stack-grafana.${local.namespace}.svc.cluster.local:3100/loki/api/v1/push
+              target_config:
+                sync_period: ${var.optimize_resources ? "30s" : "10s"}
+              scrape_configs:
+                - job_name: kubernetes-pods
+                  kubernetes_sd_configs:
+                    - role: pod
+                  pipeline_stages:
+                    - docker: {}
+                    - cri: {}
+                  relabel_configs:
+                    - action: labelmap
+                      regex: __meta_kubernetes_pod_label_(.+)
+                    - source_labels:
+                        - __meta_kubernetes_pod_name
+                      target_label: pod
+                    - source_labels:
+                        - __meta_kubernetes_namespace
+                      target_label: namespace
+                    - source_labels:
+                        - __meta_kubernetes_pod_container_name
+                      target_label: container
+                    - source_labels:
+                        - __meta_kubernetes_pod_node_name
+                      target_label: node
 
-          # Scrape configurado para pods no namespace joke-app
-          prometheus.scrape "joke-app" {
-            kubernetes_sd {
-              role = "pod"
-              namespaces {
-                names = ["joke-app"]
-              }
-            }
-            
-            relabel {
-              source_labels = ["__meta_kubernetes_pod_annotation_prometheus_io_scrape"]
-              regex = "true"
-              action = "keep"
-            }
-            
-            relabel {
-              source_labels = ["__meta_kubernetes_pod_annotation_prometheus_io_path"]
-              regex = "(.+)"
-              target_label = "__metrics_path__"
-              action = "replace"
-            }
-            
-            relabel {
-              source_labels = ["__address__", "__meta_kubernetes_pod_annotation_prometheus_io_port"]
-              regex = "(.+):(?:\\d+);(\\d+)"
-              replacement = "$${1}:$${2}"
-              target_label = "__address__"
-              action = "replace"
-            }
-            
-            relabel {
-              source_labels = ["__meta_kubernetes_pod_name"]
-              target_label = "pod"
-              action = "replace"
-            }
-            
-            forward_to = [prometheus.remote_write.default.receiver]
-          }
-
-          loki.source.kubernetes "pod_logs" {
-            targets = kubernetes.pod_logs.targets
-            forward_to = [loki.write.default.receiver]
-          }
-
-          loki.write "default" {
-            endpoint {
-              url = "${var.loki_enabled ? "http://loki-gateway.${local.namespace}.svc.cluster.local:80/loki/api/v1/push" : "http://prom-stack-grafana.${local.namespace}.svc.cluster.local:3100/loki/api/v1/push"}"
-            }
-          }
-
-          kubernetes.pod_logs "targets" {
-            ${var.optimize_resources ? "sync_period = \"30s\"" : "sync_period = \"10s\""}
-          }
-
-          otelcol.receiver.otlp "receiver" {
-            grpc {
-              endpoint = "0.0.0.0:4317"
-            }
-            http {
-              endpoint = "0.0.0.0:4318"
-            }
-            output {
-              traces = [otelcol.processor.batch.default.input]
-            }
-          }
-
-          otelcol.processor.batch "default" {
-            timeout = "5s"
-            send_batch_size = ${var.optimize_resources ? "100" : "1000"}
-            output {
-              traces = [otelcol.exporter.otlp.tempo.input]
-            }
-          }
-
-          otelcol.exporter.otlp "tempo" {
-            endpoint = "${var.tempo_endpoint}"
-            tls {
-              insecure = true
-            }
-          }
+          traces:
+            configs:
+            - name: k3s-traces
+              receivers:
+                otlp:
+                  protocols:
+                    grpc:
+                      endpoint: 0.0.0.0:4317
+                    http:
+                      endpoint: 0.0.0.0:4318
+                jaeger:
+                  protocols:
+                    thrift_http:
+                      endpoint: 0.0.0.0:14268
+              remote_write:
+                - endpoint: ${var.tempo_endpoint}
+                  insecure: true
+              batch:
+                timeout: 5s
+                send_batch_size: ${var.optimize_resources ? "100" : "1000"}
+              automatic_logging:
+                backend: logs_instance
+                logs_instance_name: k3s-logs
+                roots: true
+                processes: true
+                spans: true
 
     resources:
       limits:

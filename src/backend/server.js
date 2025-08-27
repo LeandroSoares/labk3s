@@ -195,6 +195,18 @@ app.get("/metrics", async (req, res) => {
   }
 });
 
+// Endpoint de health check para Kubernetes
+app.get("/health", (req, res) => {
+  // Verificar conexão com o banco de dados
+  db.get("SELECT 1", (err) => {
+    if (err) {
+      console.error("Health check falhou:", err);
+      return res.status(500).json({ status: "error", message: "Banco de dados indisponível" });
+    }
+    res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+});
+
 // Iniciar o servidor
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

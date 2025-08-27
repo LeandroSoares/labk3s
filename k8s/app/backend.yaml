@@ -21,20 +21,37 @@ spec:
     spec:
       containers:
       - name: backend
-        image: ${DOCKER_USERNAME}/joke-backend:${VERSION}
+        image: leandrogamedesigner/joke-backend:latest
         ports:
         - containerPort: 3000
         env:
         - name: NODE_ENV
           value: "production"
-        - name: OTEL_EXPORTER_OTLP_ENDPOINT
-          value: "http://grafana-agent.observability.svc.cluster.local:4317"
-        - name: OTEL_SERVICE_NAME
-          value: "joke-backend"
-        - name: OTEL_TRACES_SAMPLER
-          value: "parentbased_traceidratio"
-        - name: OTEL_TRACES_SAMPLER_ARG
-          value: "1.0"
+        # Desabilitadas temporariamente as variáveis de tracing
+        # - name: OTEL_EXPORTER_OTLP_ENDPOINT
+        #   value: "http://grafana-agent.observability.svc.cluster.local:4317"
+        # - name: OTEL_SERVICE_NAME
+        #   value: "joke-backend"
+        # - name: OTEL_TRACES_SAMPLER
+        #   value: "parentbased_traceidratio"
+        # - name: OTEL_TRACES_SAMPLER_ARG
+        #   value: "1.0"
+        - name: DISABLE_TRACING
+          value: "true"  # Variável para desabilitar o tracing no código
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 3
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+          timeoutSeconds: 3
         resources:
           limits:
             cpu: "0.3"
@@ -46,14 +63,14 @@ spec:
           readOnlyRootFilesystem: false  # Mantido false porque precisa escrever no SQLite
           runAsNonRoot: true
           runAsUser: 1000
-          allowPrivilegeEscalation: false
+          # Removidas restrições de segurança temporariamente
+          # allowPrivilegeEscalation: false
         volumeMounts:
         - name: sqlite-data
           mountPath: /data
       volumes:
       - name: sqlite-data
-        persistentVolumeClaim:
-          claimName: sqlite-pvc
+        emptyDir: {}  # Usar emptyDir temporariamente em vez de PVC para testar
 ---
 apiVersion: v1
 kind: Service

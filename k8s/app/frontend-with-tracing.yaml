@@ -19,10 +19,9 @@ spec:
       - name: wait-for-backend
         image: busybox:1.36.1
         command: ['sh', '-c', 'until nslookup backend-service.joke-app.svc.cluster.local; do echo "Waiting for backend service"; sleep 2; done;']
-      # Adicionado init container para tentar resolver o host do Grafana Agent, mas permite falha
-      - name: check-grafana-agent
+      - name: wait-for-grafana-agent
         image: busybox:1.36.1
-        command: ['sh', '-c', 'nslookup grafana-agent.observability.svc.cluster.local || echo "Grafana Agent not found, continuing anyway"; exit 0']
+        command: ['sh', '-c', 'until nslookup grafana-agent.observability.svc.cluster.local; do echo "Waiting for Grafana Agent service"; sleep 2; done;']
       containers:
       - name: frontend
         image: leandrogamedesigner/joke-frontend:latest
@@ -107,17 +106,13 @@ data:
         
         # Endpoint para telemetria frontend
         location /telemetry {
-            # Desabilitado temporariamente - retorna 200 OK para não bloquear a aplicação
-            return 200 '{"status":"ok","message":"telemetry disabled temporarily"}';
-            add_header Content-Type application/json;
-            
-            # Código original comentado
-            # proxy_pass http://grafana-agent.observability.svc.cluster.local:4318/v1/traces;
-            # proxy_http_version 1.1;
-            # proxy_set_header Host $host;
-            # proxy_set_header Content-Type "application/json";
-            # proxy_intercept_errors on;
-            # error_page 500 502 503 504 = @fallback;
+            # Configuração para enviar traces ao Grafana Agent
+            proxy_pass http://grafana-agent.observability.svc.cluster.local:4318/v1/traces;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header Content-Type "application/json";
+            proxy_intercept_errors on;
+            error_page 500 502 503 504 = @fallback;
         }
         
         # Fallback para quando o Grafana Agent não estiver disponível

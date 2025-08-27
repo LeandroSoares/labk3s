@@ -7,5 +7,5 @@ resources:
 - frontend.yaml
 - ingress.yaml
 - api-route.yaml
-- network-policies.yaml
+# - network-policies.yaml  # Comentado temporariamente para teste
 

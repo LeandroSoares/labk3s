@@ -13,10 +13,11 @@ terraform {
 
 # Configurar o provider Kubernetes
 provider "kubernetes" {
+  # O caminho para o arquivo kubeconfig
   config_path = var.kube_config_path
 }
 
-# Configurar o provider Helm - correção da sintaxe
+# Configurar o provider Helm
 provider "helm" {
   kubernetes = {
     config_path = var.kube_config_path

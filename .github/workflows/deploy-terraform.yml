@@ -65,6 +65,24 @@ jobs:
           echo "Arquivo terraform.auto.tfvars criado com sucesso a partir do template"
         working-directory: ./terraform
         
+      - name: Setup Kubeconfig for Local Run
+        env:
+          KUBECONFIG_CONTENT: ${{ secrets.KUBECONFIG }}
+        run: |
+          # Criar diretório temporário
+          mkdir -p /tmp
+          
+          # Criar arquivo kubeconfig para execução local
+          echo "$KUBECONFIG_CONTENT" > /tmp/kubeconfig
+          chmod 600 /tmp/kubeconfig
+          
+          # Exportar variável de ambiente para o Terraform
+          echo "TF_VAR_kube_config_path=/tmp/kubeconfig" >> $GITHUB_ENV
+          echo "KUBE_CONFIG_CONTENT=$KUBECONFIG_CONTENT" >> $GITHUB_ENV
+          
+          echo "Arquivo kubeconfig temporário criado para execução local"
+        working-directory: ./terraform
+        
       - name: Terraform Validate
         id: validate
         run: terraform validate

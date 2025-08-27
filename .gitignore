@@ -4,6 +4,7 @@
 *.tfstate.*
 .terraform.lock.hcl
 terraform.tfvars
+terraform.auto.tfvars
 *.tfplan
 .terraformrc
 terraform.rc

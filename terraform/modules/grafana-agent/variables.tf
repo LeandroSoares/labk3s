@@ -13,7 +13,7 @@ variable "use_existing_namespace" {
 variable "agent_version" {
   description = "Versão do Helm chart do Grafana Agent"
   type        = string
-  default     = "0.25.1"
+  default     = "0.44.2"  # Atualizado para a versão mais recente disponível
 }
 
 variable "log_level" {

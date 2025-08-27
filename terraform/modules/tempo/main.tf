@@ -24,13 +24,13 @@ locals {
   namespace = var.use_existing_namespace ? var.namespace : kubernetes_namespace.tempo_namespace[0].metadata[0].name
 }
 
-# Instalação do OpenTelemetry Collector via Helm
-resource "helm_release" "opentelemetry_collector" {
-  name       = "otel-collector"
-  repository = "https://open-telemetry.github.io/opentelemetry-helm-charts"
-  chart      = "opentelemetry-collector"
+# Instalação do Tempo para armazenamento e visualização de traces
+resource "helm_release" "tempo" {
+  name       = "tempo"
+  repository = "https://grafana.github.io/helm-charts"
+  chart      = "tempo"
   namespace  = local.namespace
-  version    = var.opentelemetry_collector_version
+  version    = var.tempo_version
   
   values = [
     <<-EOT
@@ -47,57 +47,6 @@ resource "helm_release" "opentelemetry_collector" {
       
       processors:
         batch:
-          timeout: 5s
-          send_batch_size: 1000
-        memory_limiter:
-          check_interval: 1s
-          limit_mib: ${var.optimize_resources ? 100 : 300}
-      
-      exporters:
-        otlp:
-          endpoint: tempo-tempo-distributor:4317
-          tls:
-            insecure: true
-        prometheus:
-          endpoint: 0.0.0.0:8889
-          resource_to_telemetry_conversion:
-            enabled: true
-      
-      service:
-        pipelines:
-          traces:
-            receivers: [otlp]
-            processors: [memory_limiter, batch]
-            exporters: [otlp]
-          metrics:
-            receivers: [otlp]
-            processors: [memory_limiter, batch]
-            exporters: [prometheus]
-    
-    resources:
-      limits:
-        cpu: ${var.optimize_resources ? "100m" : "200m"}
-        memory: ${var.optimize_resources ? "128Mi" : "256Mi"}
-      requests:
-        cpu: ${var.optimize_resources ? "50m" : "100m"}
-        memory: ${var.optimize_resources ? "64Mi" : "128Mi"}
-    
-    # Configuração do serviço corrigida
-    serviceType: ClusterIP
-    
-    ports:
-      - name: otlp-grpc
-        port: 4317
-        protocol: TCP
-        targetPort: 4317
-      - name: otlp-http
-        port: 4318
-        protocol: TCP
-        targetPort: 4318
-      - name: prometheus
-        port: 8889
-        protocol: TCP
-        targetPort: 8889
     EOT
   ]
 

@@ -40,7 +40,7 @@ module "observability" {
   }
 }
 
-# Módulo de tracing com Grafana Tempo e OpenTelemetry
+# Módulo de tracing com Grafana Tempo
 module "tempo" {
   source = "./modules/tempo"
   count  = var.tempo_enabled ? 1 : 0
@@ -48,7 +48,6 @@ module "tempo" {
   namespace                     = var.namespace
   use_existing_namespace        = true  # Usar o namespace criado pelo módulo de observabilidade
   tempo_version                 = var.tempo_version
-  opentelemetry_collector_version = var.opentelemetry_collector_version
   optimize_resources            = var.optimize_resources
   enable_span_logging           = var.enable_span_logging
   tempo_domain                  = var.tempo_domain
@@ -63,7 +62,7 @@ module "tempo" {
 # Módulo do Grafana Agent para coleta unificada de métricas, logs e traces
 module "grafana_agent" {
   source = "./modules/grafana-agent"
-  count  = var.grafana_agent_enabled ? 1 : 0
+  # Removido o count para sempre ativar o Grafana Agent
 
   namespace                = var.namespace
   use_existing_namespace   = true  # Usar o namespace criado pelo módulo de observabilidade
@@ -71,7 +70,7 @@ module "grafana_agent" {
   log_level                = var.grafana_agent_log_level
   optimize_resources       = var.optimize_resources
   loki_enabled             = false # Será habilitado quando implementarmos o Loki
-  tempo_endpoint           = "tempo:4317"  # Endpoint do serviço Tempo dentro do cluster
+  tempo_endpoint           = var.tempo_enabled ? "tempo:4317" : ""  # Endpoint do serviço Tempo dentro do cluster
 }
 
 # Configurar Ingress para os serviços de observabilidade

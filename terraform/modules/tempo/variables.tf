@@ -1,5 +1,5 @@
 variable "namespace" {
-  description = "Namespace para instalação do Tempo e OpenTelemetry"
+  description = "Namespace para instalação do Tempo"
   type        = string
   default     = "observability"
 }
@@ -20,12 +20,6 @@ variable "tempo_tag" {
   description = "Tag da imagem do Tempo"
   type        = string
   default     = "2.3.1" # Verifique a versão mais recente no momento da implementação
-}
-
-variable "opentelemetry_collector_version" {
-  description = "Versão do Helm chart do OpenTelemetry Collector"
-  type        = string
-  default     = "0.71.1" # Verifique a versão mais recente no momento da implementação
 }
 
 variable "optimize_resources" {

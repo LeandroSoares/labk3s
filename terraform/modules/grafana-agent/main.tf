@@ -142,7 +142,9 @@ resource "helm_release" "grafana_agent" {
                 logs_instance_name: k3s-logs
                 roots: true
                 processes: true
-                spans: true
+                spans: ${var.optimize_resources ? "false" : "true"}
+              service_graphs:
+                enabled: true
 
     resources:
       limits:

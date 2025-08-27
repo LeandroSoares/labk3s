@@ -17,12 +17,6 @@ variable "tempo_domain" {
   default     = "tempo.labk3s.online"
 }
 
-variable "opentelemetry_collector_version" {
-  description = "Versão do Helm chart do OpenTelemetry Collector"
-  type        = string
-  default     = "0.71.1"
-}
-
 variable "enable_span_logging" {
   description = "Habilitar o logging de spans recebidos"
   type        = bool

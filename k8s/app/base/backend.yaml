@@ -28,13 +28,9 @@ spec:
         - name: NODE_ENV
           value: "production"
         - name: OTEL_EXPORTER_OTLP_ENDPOINT
-          value: "http://grafana-agent.observability.svc.cluster.local:4317"
+          value: "http://grafana-agent.observability.svc.cluster.local:4318/v1/traces"
         - name: OTEL_SERVICE_NAME
-          value: "joke-backend"
-        - name: OTEL_TRACES_SAMPLER
-          value: "parentbased_traceidratio"
-        - name: OTEL_TRACES_SAMPLER_ARG
-          value: "1.0"
+          value: "joke-api"
         resources:
           limits:
             cpu: "0.3"

@@ -24,37 +24,6 @@ locals {
   namespace = var.use_existing_namespace ? var.namespace : kubernetes_namespace.tempo_namespace[0].metadata[0].name
 }
 
-# Instalação do Tempo para armazenamento e visualização de traces
-resource "helm_release" "tempo" {
-  name       = "tempo"
-  repository = "https://grafana.github.io/helm-charts"
-  chart      = "tempo"
-  namespace  = local.namespace
-  version    = var.tempo_version
-  
-  values = [
-    <<-EOT
-    mode: deployment
-    
-    config:
-      receivers:
-        otlp:
-          protocols:
-            grpc:
-              endpoint: 0.0.0.0:4317
-            http:
-              endpoint: 0.0.0.0:4318
-      
-      processors:
-        batch:
-    EOT
-  ]
-
-  depends_on = [
-    kubernetes_namespace.tempo_namespace
-  ]
-}
-
 # Instalação do Tempo via Helm
 resource "helm_release" "tempo" {
   name       = "tempo"
@@ -175,11 +144,11 @@ resource "kubernetes_config_map" "tempo_grafana_datasource" {
         jsonData:
           httpMethod: GET
           serviceMap:
-            datasourceUid: prometheus
+            datasourceUid: ${var.prometheus_datasource_uid}
     EOT
   }
 
   depends_on = [
-    helm_release.tempo
+    kubernetes_namespace.tempo_namespace
   ]
 }

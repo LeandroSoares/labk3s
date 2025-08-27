@@ -93,17 +93,13 @@ laboratoriok3s/
 ├── k8s/                          # Configurações Kubernetes
 │   ├── app/                      # Manifestos da aplicação
 │   │   ├── namespace.yaml        # Namespace da aplicação
-│   │   ├── frontend.yaml         # Deployment e Service do frontend
-│   │   ├── frontend-nodeport.yaml # Serviço NodePort opcional
-│   │   ├── backend.yaml          # Deployment, Service e PVC do backend
+│   │   ├── frontend.yaml         # Deployment e Service do frontend com configuração de tracing
+│   │   ├── backend.yaml          # Deployment, Service e PVC do backend com configuração de tracing
 │   │   ├── ingress.yaml          # Ingress para a aplicação principal
 │   │   ├── api-route.yaml        # Ingress para as rotas da API
+│   │   ├── network-policies.yaml # Políticas de rede incluindo regras para telemetria
 │   │   ├── letsencrypt-issuer.yaml # Emissor para certificados
-│   │   ├── kustomization.yaml    # Configuração do Kustomize
-│   │   └── overlays/             # Overlays do Kustomize
-│   │       ├── base/             # Configuração base
-│   │       ├── with-tracing/     # Overlay para OpenTelemetry Collector
-│   │       └── with-grafana-agent/ # Overlay para Grafana Agent
+│   │   └── kustomization.yaml    # Configuração do Kustomize
 ├── src/                          # Código-fonte da aplicação
 │   ├── frontend/                 # Frontend da aplicação
 │   │   ├── index.html            # Página HTML principal
@@ -152,11 +148,8 @@ A aplicação implementada consiste em um site simples que exibe e permite adici
 A aplicação é implantada no cluster K3s usando Kustomize:
 
 ```sh
-# Criar o namespace e recursos básicos (sem tracing)
+# Implantar todos os recursos da aplicação (já com tracing configurado)
 kubectl apply -k k8s/app
-
-# OU implante com suporte a tracing usando Grafana Agent
-kubectl apply -k k8s/app/overlays/with-grafana-agent
 
 # Verificar o status da implantação
 kubectl get pods -n joke-app
@@ -194,17 +187,17 @@ kubectl apply -f cluster-issuer.yaml
 ```sh
 # No diretório terraform
 terraform init
-terraform apply -var="optimize_resources=true" -var="letsencrypt_email=seu-email@exemplo.com" -var="domain_name=labk3s.online"
+terraform apply -var="optimize_resources=true" -var="letsencrypt_email=seu-email@exemplo.com" -var="domain_name=labk3s.online" -var="tempo_enabled=true" -var="grafana_agent_enabled=true"
 ```
 
 Este processo:
 - Instala o cert-manager para gerenciamento de certificados TLS
-- Configura a stack de observabilidade (Prometheus e Grafana)
-- Cria os Ingress necessários para acessar Grafana e Prometheus
+- Configura a stack de observabilidade (Prometheus, Grafana, Tempo e Grafana Agent)
+- Cria os Ingress necessários para acessar Grafana, Prometheus e Tempo
 
 ### 5. Implantação da Aplicação
 ```sh
-# Implantar todos os recursos da aplicação usando Kustomize
+# Implantar todos os recursos da aplicação
 kubectl apply -k k8s/app
 ```
 

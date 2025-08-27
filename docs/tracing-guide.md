@@ -25,23 +25,22 @@ Frontend (JS + OpenTelemetry) ────► Grafana Agent ────► Graf
 - **Explorador do Grafana**: https://grafana.labk3s.online/explore?left=%7B%22datasource%22:%22tempo%22%7D
 - **Interface do Tempo**: https://tempo.labk3s.online
 
-## Implementação com Kustomize
+## Implementação
 
-O projeto utiliza Kustomize para gerenciar as configurações da aplicação com tracing habilitado:
+A implementação de tracing está integrada diretamente nos manifestos da aplicação:
 
 ```
 k8s/
   app/
-    base/                  # Configuração base da aplicação
-    overlays/
-      with-tracing/        # Overlay para habilitar tracing com OpenTelemetry Collector
-      with-grafana-agent/  # Overlay para habilitar tracing com Grafana Agent
+    backend.yaml          # Configurado com variáveis para Grafana Agent
+    frontend.yaml         # Configurado com ConfigMap para Nginx
+    network-policies.yaml # Inclui políticas para comunicação com Grafana Agent
 ```
 
-Para aplicar a configuração com Grafana Agent:
+Para aplicar a configuração:
 
 ```bash
-kubectl apply -k k8s/app/overlays/with-grafana-agent
+kubectl apply -k k8s/app
 ```
 
 ## Instrumentação das Aplicações

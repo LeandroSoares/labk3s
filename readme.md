@@ -7,6 +7,20 @@ Demonstrar conhecimentos em DevOps, implementando um cluster Kubernetes (K3s) co
 ✅ **Implementado e funcionando**  
 O projeto foi completamente implementado e está funcionando corretamente, com todos os componentes integrados e acessíveis conforme planejado.
 
+## Gerenciamento de Estado Terraform
+
+Este projeto utiliza o **Terraform Cloud** apenas para gerenciamento de estado, enquanto toda a execução é realizada localmente.
+
+### Configuração do Terraform
+- **Execução**: Sempre local (no VPS ou ambiente de desenvolvimento)
+- **Estado**: Armazenado no Terraform Cloud (organização: `leandro-soares-org`, workspace: `laboratoriok3s`)
+- **Benefícios**: 
+  - Acesso direto ao cluster Kubernetes
+  - Controle total sobre o ambiente de execução
+  - Estado centralizado e versionado no Terraform Cloud
+
+Para mais informações, consulte o arquivo [terraform/README-TERRAFORM-EXECUTION.md](terraform/README-TERRAFORM-EXECUTION.md).
+
 ## Arquitetura do Projeto
 
 ### Terraform (Componentes de Terceiros)

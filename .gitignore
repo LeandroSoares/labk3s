@@ -8,6 +8,8 @@ terraform.auto.tfvars
 *.tfplan
 .terraformrc
 terraform.rc
+terraform/terraform.local.tf
+terraform/terraform.cloud.tf
 
 # Kubernetes
 kubeconfig

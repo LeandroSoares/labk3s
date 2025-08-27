@@ -1,8 +1,16 @@
 terraform {
-  cloud {
-    organization = "leandro-soares-org"
-    workspaces {
-      name = "laboratoriok3s"
+  backend "local" {
+    path = "terraform.tfstate"
+  }
+
+  required_providers {
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = ">=2.0.0"
+    }
+    helm = {
+      source  = "hashicorp/helm"
+      version = ">=2.0.0"
     }
   }
 }

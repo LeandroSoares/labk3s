@@ -3,7 +3,7 @@
 variable "kube_config_path" {
   description = "Caminho para o arquivo kubeconfig"
   type        = string
-  default     = "~/.kube/config"
+  default     = "/tmp/kubeconfig"
 }
 
 variable "namespace" {
@@ -15,7 +15,7 @@ variable "namespace" {
 variable "prometheus_stack_version" {
   description = "Versão do Helm chart kube-prometheus-stack"
   type        = string
-  default     = "45.27.2"  # Substitua pela versão mais recente
+  default     = "45.27.2" # Substitua pela versão mais recente
 }
 
 variable "grafana_enabled" {
@@ -51,7 +51,7 @@ variable "grafana_nodeport" {
 variable "grafana_admin_password" {
   description = "Senha de administrador para o Grafana"
   type        = string
-  default     = "admin"  # Altere para uma senha segura ou use variáveis de ambiente
+  default     = "admin" # Altere para uma senha segura ou use variáveis de ambiente
   sensitive   = true
 }
 

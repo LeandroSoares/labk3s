@@ -16,6 +16,19 @@ O Alertmanager está disponível através da URL:
    - Traefik Ingress Controller (taxa de erros)
 3. **Dashboard Grafana**: Visualização do status dos alertas em tempo real
 
+## Aplicando Configurações via Kustomize
+
+As configurações do Alertmanager estão organizadas para uso com Kustomize:
+
+```bash
+# Aplicar configurações do Alertmanager
+kubectl apply -k k8s/alertmanager
+```
+
+Este comando aplica:
+- ConfigMap com a configuração do Alertmanager
+- PrometheusRules com as regras de alerta personalizadas
+
 ## Estrutura das Regras de Alerta
 
 As regras de alerta estão organizadas em três grupos:
@@ -70,9 +83,12 @@ Para expandir a implementação do Alertmanager, considere:
 
 Após alterações nas regras de alerta ou na configuração do Alertmanager:
 
-1. Aplique as alterações com `kubectl apply -f k8s/prometheus-rules.yaml`
-2. Aplique a nova configuração com `kubectl apply -f k8s/alertmanager-config.yaml`
-3. Reinicie o pod do Alertmanager para aplicar as mudanças:
+1. Atualize os arquivos YAML na pasta `k8s/alertmanager/` conforme necessário
+2. Aplique as alterações usando Kustomize:
+   ```bash
+   kubectl apply -k k8s/alertmanager
+   ```
+3. Se necessário, reinicie o pod do Alertmanager para aplicar as mudanças imediatamente:
    ```bash
    kubectl delete pod -n observability $(kubectl get pods -n observability | grep alertmanager | awk '{print $1}')
    ```

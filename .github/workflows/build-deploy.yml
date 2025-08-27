@@ -123,6 +123,8 @@ jobs:
           # Substitui as variáveis nos arquivos YAML
           sed -i "s|\${DOCKER_USERNAME}|${{ secrets.DOCKERHUB_USERNAME }}|g" ./k8s/app/frontend.yaml
           sed -i "s|\${VERSION}|${{ env.VERSION }}|g" ./k8s/app/frontend.yaml
+          sed -i "s|\${DOCKER_USERNAME}|${{ secrets.DOCKERHUB_USERNAME }}|g" ./k8s/app/frontend-with-tracing.yaml
+          sed -i "s|\${VERSION}|${{ env.VERSION }}|g" ./k8s/app/frontend-with-tracing.yaml
           sed -i "s|\${DOCKER_USERNAME}|${{ secrets.DOCKERHUB_USERNAME }}|g" ./k8s/app/backend.yaml
           sed -i "s|\${VERSION}|${{ env.VERSION }}|g" ./k8s/app/backend.yaml
        

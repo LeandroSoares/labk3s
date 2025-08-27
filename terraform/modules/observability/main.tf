@@ -151,10 +151,6 @@ resource "helm_release" "prometheus_stack" {
               editable: true
               options:
                 path: /var/lib/grafana/dashboards/k3s
-      dashboards:
-        k3s:
-          k3s-cluster-dashboard:
-            file: dashboards/k3s-cluster-dashboard.json
       dashboardsConfigMaps:
         k3s: ${kubernetes_config_map.grafana_dashboards.metadata[0].name}
     EOT
@@ -200,9 +196,7 @@ resource "kubernetes_config_map" "grafana_dashboards" {
     }
   }
 
-  data = {
-    "k3s-cluster-dashboard.json" = file("${path.root}/../grafana-dashboards/k3s-cluster-dashboard.json")
-  }
+  data = var.grafana_dashboards
 
   depends_on = [kubernetes_namespace.observability]
 }

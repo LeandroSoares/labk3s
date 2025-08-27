@@ -58,6 +58,12 @@ variable "dashboards_directory" {
   default     = "../grafana-dashboards"
 }
 
+variable "grafana_dashboards" {
+  description = "Mapa de dashboards do Grafana para provisionar (nome do arquivo e conteúdo)"
+  type        = map(string)
+  default     = {}
+}
+
 variable "alertmanager_enabled" {
   description = "Habilitar ou desabilitar o Alertmanager"
   type        = bool

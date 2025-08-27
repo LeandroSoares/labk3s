@@ -46,6 +46,12 @@ module "observability" {
   optimize_resources       = var.optimize_resources
   alertmanager_enabled     = var.alertmanager_enabled
   
+  # Dashboards do Grafana para provisionar
+  grafana_dashboards = {
+    "k3s-cluster-dashboard.json" = file("${path.module}/grafana-dashboards/k3s-cluster-dashboard.json"),
+    "alertmanager-status.json"   = file("${path.module}/grafana-dashboards/alertmanager-status.json")
+  }
+  
   # Valores personalizados para o Prometheus Stack
   prometheus_stack_values = {
     "grafana.adminPassword" = var.grafana_admin_password

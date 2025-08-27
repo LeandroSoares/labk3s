@@ -18,12 +18,30 @@ Este dashboard fornece uma visão geral do seu cluster K3s e das aplicações em
   - Requisições de memória por pod
   - Requisições de CPU por pod
 
+## Alertmanager Status Dashboard
+
+Este dashboard fornece uma visão detalhada do status do Alertmanager e dos alertas ativos:
+
+- **Status do Alertmanager**:
+  - Estado operacional do serviço
+  - Total de alertas ativos
+  - Distribuição de alertas por severidade
+  - Taxa de notificações
+
+- **Alertas Ativos**:
+  - Alertas por estado (firing/pending)
+  - Duração dos alertas ativos
+  - Histórico de alertas disparados
+  - Alertas por label/anotação
+
 ## Como importar
+
+Os dashboards são provisionados automaticamente pelo Terraform, mas você também pode importá-los manualmente:
 
 1. Acesse seu Grafana em `https://grafana.labk3s.online`
 2. Faça login com as credenciais configuradas
 3. Clique em "+ Import" no menu lateral
-4. Clique em "Upload JSON file" e selecione o arquivo `k3s-cluster-dashboard.json`
+4. Clique em "Upload JSON file" e selecione um dos arquivos JSON
 5. Clique em "Import"
 
 ## Personalização

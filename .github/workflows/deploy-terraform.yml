@@ -1,0 +1,123 @@
+name: deploy-terraform
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/deploy-terraform.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'terraform/**'
+  # Permite execução manual do workflow
+  workflow_dispatch:
+
+env:
+  VERSION: ${{ github.sha }}
+  TF_CLOUD_ORGANIZATION: "leandro-soares-org"
+  TF_WORKSPACE: "laboratoriok3s"
+  TF_LOG: INFO
+
+jobs:
+   
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          cli_config_credentials_token: ${{ secrets.TERRAFORM_TOKEN }}
+          terraform_version: 1.6.0
+          
+      - name: Terraform Format
+        id: fmt
+        run: terraform fmt -check
+        working-directory: ./terraform
+        continue-on-error: true
+        
+      - name: Terraform Init
+        id: init
+        run: terraform init
+        working-directory: ./terraform
+        
+      - name: Prepare terraform.auto.tfvars from template
+        env:
+          GRAFANA_PASSWORD: ${{ secrets.GRAFANA_PASSWORD }}
+          LETSENCRYPT_EMAIL: ${{ secrets.LETSENCRYPT_EMAIL }}
+        run: |
+          # Copiar o arquivo template
+          cp terraform.auto.tfvars.template terraform.auto.tfvars
+          
+          # Substituir os placeholders com os valores das secrets
+          sed -i "s/__GRAFANA_PASSWORD__/$GRAFANA_PASSWORD/g" terraform.auto.tfvars
+          sed -i "s/__LETSENCRYPT_EMAIL__/$LETSENCRYPT_EMAIL/g" terraform.auto.tfvars
+          
+          # Exibir mensagem de confirmação sem revelar valores sensíveis
+          echo "Arquivo terraform.auto.tfvars criado com sucesso a partir do template"
+        working-directory: ./terraform
+        
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate
+        working-directory: ./terraform
+        
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -no-color
+        working-directory: ./terraform
+        continue-on-error: true
+        
+      - name: Update Pull Request
+        uses: actions/github-script@v6
+        if: github.event_name == 'pull_request'
+        env:
+          PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
+            #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
+            #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
+            <details><summary>Validation Output</summary>
+
+            \`\`\`\n
+            ${{ steps.validate.outputs.stdout }}
+            \`\`\`
+
+            </details>
+
+            #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
+
+            <details><summary>Show Plan</summary>
+
+            \`\`\`\n
+            ${process.env.PLAN}
+            \`\`\`
+
+            </details>`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+            
+      - name: Terraform Plan Status
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
+        
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve
+        working-directory: ./terraform
+       

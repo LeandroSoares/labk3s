@@ -4,7 +4,7 @@ kind: Kustomization
 resources:
 - namespace.yaml
 - backend.yaml
-- frontend.yaml
+- frontend-with-tracing.yaml  # Usando a versão com tracing habilitado
 - ingress.yaml
 - api-route.yaml
 # - network-policies.yaml  # Comentado temporariamente para teste

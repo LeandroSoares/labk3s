@@ -27,17 +27,16 @@ spec:
         env:
         - name: NODE_ENV
           value: "production"
-        # Desabilitadas temporariamente as variáveis de tracing
-        # - name: OTEL_EXPORTER_OTLP_ENDPOINT
-        #   value: "http://grafana-agent.observability.svc.cluster.local:4317"
-        # - name: OTEL_SERVICE_NAME
-        #   value: "joke-backend"
-        # - name: OTEL_TRACES_SAMPLER
-        #   value: "parentbased_traceidratio"
-        # - name: OTEL_TRACES_SAMPLER_ARG
-        #   value: "1.0"
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "http://grafana-agent.observability.svc.cluster.local:4318/v1/traces"
+        - name: OTEL_SERVICE_NAME
+          value: "joke-backend"
+        - name: OTEL_TRACES_SAMPLER
+          value: "parentbased_traceidratio"
+        - name: OTEL_TRACES_SAMPLER_ARG
+          value: "1.0"
         - name: DISABLE_TRACING
-          value: "true"  # Variável para desabilitar o tracing no código
+          value: "false"  # Habilitando o tracing no código
         readinessProbe:
           httpGet:
             path: /health

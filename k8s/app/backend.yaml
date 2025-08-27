@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: leandrogamedesigner/joke-backend:latest
+        image: ${DOCKER_USERNAME}/joke-backend:${VERSION}
         ports:
         - containerPort: 3000
         env:

@@ -25,7 +25,7 @@ spec:
         command: ['sh', '-c', 'nslookup grafana-agent.observability.svc.cluster.local || echo "Grafana Agent not found, continuing anyway"; exit 0']
       containers:
       - name: frontend
-        image: leandrogamedesigner/joke-frontend:latest
+        image: ${DOCKER_USERNAME}/joke-frontend:${VERSION}
         ports:
         - containerPort: 80
         resources:

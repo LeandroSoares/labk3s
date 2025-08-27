@@ -82,21 +82,22 @@ resource "helm_release" "opentelemetry_collector" {
         cpu: ${var.optimize_resources ? "50m" : "100m"}
         memory: ${var.optimize_resources ? "64Mi" : "128Mi"}
     
-    service:
-      type: ClusterIP
-      ports:
-        - name: otlp-grpc
-          port: 4317
-          protocol: TCP
-          targetPort: 4317
-        - name: otlp-http
-          port: 4318
-          protocol: TCP
-          targetPort: 4318
-        - name: prometheus
-          port: 8889
-          protocol: TCP
-          targetPort: 8889
+    # Configuração do serviço corrigida
+    serviceType: ClusterIP
+    
+    ports:
+      - name: otlp-grpc
+        port: 4317
+        protocol: TCP
+        targetPort: 4317
+      - name: otlp-http
+        port: 4318
+        protocol: TCP
+        targetPort: 4318
+      - name: prometheus
+        port: 8889
+        protocol: TCP
+        targetPort: 8889
     EOT
   ]
 

@@ -44,21 +44,17 @@ Esta abordagem permite:
 
 ## Como Aplicar a Solução
 
-1. Reconstrua e publique a imagem Docker:
-```bash
-cd src/frontend
-docker build -t leandrogamedesigner/joke-frontend:latest .
-docker push leandrogamedesigner/joke-frontend:latest
-```
+### Pipeline CI/CD
 
-2. Reinstale o aplicativo:
-```bash
-kubectl apply -k k8s/app/
-```
+O deploy desta alteração segue o fluxo padrão de CI/CD:
 
-## Verificação
+1. **Commit e Push**: As alterações já foram commitadas no repositório
+2. **Build pela Pipeline**: A pipeline CI/CD constrói a imagem Docker com as novas configurações
+3. **Deploy pela Pipeline**: A pipeline realiza o deploy no cluster Kubernetes
 
-Para confirmar que a solução funcionou:
+> **Importante**: Não construímos imagens localmente. Todas as imagens são construídas e publicadas pela pipeline CI/CD.
+
+### Verificação
 ```bash
 kubectl get pods -n joke-app
 kubectl logs -n joke-app deployment/frontend

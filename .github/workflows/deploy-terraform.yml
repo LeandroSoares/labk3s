@@ -15,8 +15,6 @@ on:
 
 env:
   VERSION: ${{ github.sha }}
-  TF_CLOUD_ORGANIZATION: "leandro-soares-org"
-  TF_WORKSPACE: "laboratoriok3s"
   TF_LOG: INFO
 
 jobs:
@@ -35,7 +33,6 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
-          cli_config_credentials_token: ${{ secrets.TERRAFORM_TOKEN }}
           terraform_version: 1.6.0
           
       - name: Terraform Format
@@ -78,7 +75,6 @@ jobs:
           
           # Exportar variável de ambiente para o Terraform
           echo "TF_VAR_kube_config_path=/tmp/kubeconfig" >> $GITHUB_ENV
-          echo "KUBE_CONFIG_CONTENT=$KUBECONFIG_CONTENT" >> $GITHUB_ENV
           
           echo "Arquivo kubeconfig temporário criado para execução local"
         working-directory: ./terraform

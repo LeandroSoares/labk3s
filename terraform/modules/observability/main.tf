@@ -143,7 +143,7 @@ resource "helm_release" "prometheus_stack" {
         dashboardproviders.yaml:
           apiVersion: 1
           providers:
-            - name: 'k3s-dashboards'
+            - name: 'dashboards-k3s'
               orgId: 1
               folder: 'K3s'
               type: file

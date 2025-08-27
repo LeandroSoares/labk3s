@@ -42,7 +42,7 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 5
         securityContext:
-          readOnlyRootFilesystem: true
+          # readOnlyRootFilesystem: true # Temporariamente desabilitado para resolver problema de permissão
           runAsNonRoot: true
           runAsUser: 101
           allowPrivilegeEscalation: false

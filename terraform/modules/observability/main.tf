@@ -186,17 +186,18 @@ resource "kubernetes_service" "grafana_nodeport" {
   depends_on = [helm_release.prometheus_stack]
 }
 
-# ConfigMap para armazenar os dashboards do Grafana
+  # ConfigMap para armazenar os dashboards do Grafana
 resource "kubernetes_config_map" "grafana_dashboards" {
   metadata {
-    name      = "grafana-k3s-dashboards"
+    name      = "prom-stack-grafana-dashboards-k3s"
     namespace = kubernetes_namespace.observability.metadata[0].name
     labels = {
       grafana_dashboard = "1"
+      dashboard-provider = "k3s"
     }
   }
 
   data = var.grafana_dashboards
-
+  
   depends_on = [kubernetes_namespace.observability]
 }

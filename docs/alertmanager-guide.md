@@ -63,6 +63,17 @@ O Alertmanager está configurado com regras de inibição para evitar tempestade
 
 1. Alertas de warning são silenciados quando há alertas críticos para o mesmo serviço
 2. Todos os alertas de um nó são silenciados quando o nó está indisponível
+3. Alertas específicos do plano de controle do K3s são silenciados por serem falsos positivos
+
+### Alertas específicos do K3s
+
+Em um cluster K3s, você pode observar alguns alertas que são considerados "falsos positivos" devido à arquitetura específica do K3s:
+
+- **KubeControllerManagerDown**
+- **KubeProxyDown**
+- **KubeSchedulerDown**
+
+Estes alertas ocorrem porque, no K3s, esses componentes são executados como parte do processo principal do K3s e não como pods separados. Além disso, por padrão, as métricas desses componentes não são expostas externamente por razões de segurança.
 
 Para silenciar manualmente alertas:
 1. Acesse a interface web do Alertmanager

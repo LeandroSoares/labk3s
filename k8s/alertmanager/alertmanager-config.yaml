@@ -60,3 +60,10 @@ data:
         alertname: '.*'
       # Inibir todos os alertas relacionados a um nó quando ele estiver indisponível
       equal: ['node']
+      
+    # Silenciando alertas específicos para componentes do plano de controle no K3s
+    - source_match_re:
+        alertname: 'KubeControllerManagerDown|KubeProxyDown|KubeSchedulerDown'
+      target_match_re:
+        alertname: 'KubeControllerManagerDown|KubeProxyDown|KubeSchedulerDown'
+      equal: ['job']

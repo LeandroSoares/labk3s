@@ -3,7 +3,6 @@ FROM nginx:alpine
 # Copiar arquivos de configuração e aplicação
 COPY index.html /usr/share/nginx/html/
 COPY script.js /usr/share/nginx/html/
-COPY telemetry.js /usr/share/nginx/html/
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Definir permissões seguras e remover permissões desnecessárias

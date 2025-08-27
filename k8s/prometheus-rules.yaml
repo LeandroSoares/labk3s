@@ -1,0 +1,99 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: k3s-alerting-rules
+  namespace: observability
+  labels:
+    release: prom-stack  # Importante para integração com o Helm Chart
+spec:
+  groups:
+  - name: k3s-cluster-alerts
+    rules:
+    - alert: K3sNodeMemoryHigh
+      expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Uso de memória elevado no nó ({{ $labels.instance }})"
+        description: "Uso de memória no nó {{ $labels.instance }} está acima de 85% há 5 minutos.\n  Valor atual: {{ $value }}%"
+    
+    - alert: K3sNodeCPUHigh
+      expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Uso de CPU elevado no nó ({{ $labels.instance }})"
+        description: "Uso de CPU no nó {{ $labels.instance }} está acima de 80% há 5 minutos.\n  Valor atual: {{ $value }}%"
+    
+    - alert: K3sNodeDiskSpaceLow
+      expr: node_filesystem_free_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"} * 100 < 15
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Espaço em disco baixo no nó ({{ $labels.instance }})"
+        description: "Espaço em disco no nó {{ $labels.instance }} está abaixo de 15% há 5 minutos.\n  Valor atual: {{ $value }}%"
+    
+    - alert: K3sNodeDiskSpaceCritical
+      expr: node_filesystem_free_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"} * 100 < 5
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Espaço em disco crítico no nó ({{ $labels.instance }})"
+        description: "Espaço em disco no nó {{ $labels.instance }} está abaixo de 5% há 5 minutos.\n  Valor atual: {{ $value }}%"
+        
+  - name: joke-app-alerts
+    rules:
+    - alert: JokeAppHighRequestRate
+      expr: sum(rate(joke_requests_total[5m])) > 5
+      for: 5m
+      labels:
+        severity: warning
+        application: joke-app
+      annotations:
+        summary: "Taxa de requisições elevada na API de piadas"
+        description: "A API de piadas está recebendo mais de 5 requisições por segundo há 5 minutos.\n  Valor atual: {{ $value }} req/s"
+    
+    - alert: JokeAppHighErrorRate
+      expr: sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) * 100 > 5
+      for: 2m
+      labels:
+        severity: critical
+        application: joke-app
+      annotations:
+        summary: "Taxa de erros elevada na aplicação"
+        description: "A aplicação está retornando mais de 5% de erros 5xx há 2 minutos.\n  Valor atual: {{ $value }}%"
+    
+    - alert: JokeAppPodRestarting
+      expr: increase(kube_pod_container_status_restarts_total{namespace="joke-app"}[15m]) > 3
+      labels:
+        severity: warning
+        application: joke-app
+      annotations:
+        summary: "Pod da aplicação reiniciando frequentemente ({{ $labels.pod }})"
+        description: "O pod {{ $labels.pod }} reiniciou mais de 3 vezes nos últimos 15 minutos"
+    
+    - alert: JokeAppBackendDown
+      expr: up{job="backend-service"} == 0
+      for: 1m
+      labels:
+        severity: critical
+        application: joke-app
+        component: backend
+      annotations:
+        summary: "Backend da aplicação está indisponível"
+        description: "O backend da aplicação está indisponível há 1 minuto"
+
+  - name: traefik-alerts
+    rules:
+    - alert: TraefikHighErrorRate
+      expr: sum(rate(traefik_service_requests_total{code=~"5.."}[5m])) / sum(rate(traefik_service_requests_total[5m])) * 100 > 5
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Taxa de erros elevada no Traefik"
+        description: "O Traefik está retornando mais de 5% de erros 5xx há 2 minutos.\n  Valor atual: {{ $value }}%"

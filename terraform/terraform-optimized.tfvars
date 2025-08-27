@@ -20,6 +20,9 @@ grafana_admin_password = "admin@123"  # Senha atualizada para maior segurança
 # Criar recursos de Ingress
 create_ingress = true
 
+# Habilitar Alertmanager
+alertmanager_enabled = true
+
 # Configuração do cert-manager
 cert_manager_version = "v1.13.1"
 letsencrypt_email = "leandrogamedesigner@gmail.com"  # Email atualizado

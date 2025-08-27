@@ -80,7 +80,23 @@ resource "helm_release" "prometheus_stack" {
     # Configuração para desativar componentes não essenciais
     {
       name  = "alertmanager.enabled"
-      value = var.optimize_resources ? "false" : "true"
+      value = var.alertmanager_enabled ? "true" : "false"
+    },
+    {
+      name  = "alertmanager.resources.requests.cpu"
+      value = var.optimize_resources ? "50m" : "100m"
+    },
+    {
+      name  = "alertmanager.resources.requests.memory"
+      value = var.optimize_resources ? "128Mi" : "256Mi"
+    },
+    {
+      name  = "alertmanager.resources.limits.cpu"
+      value = var.optimize_resources ? "100m" : "200m"
+    },
+    {
+      name  = "alertmanager.resources.limits.memory"
+      value = var.optimize_resources ? "256Mi" : "512Mi"
     },
     {
       name  = "grafana.enabled"

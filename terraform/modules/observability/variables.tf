@@ -57,3 +57,9 @@ variable "dashboards_directory" {
   type        = string
   default     = "../grafana-dashboards"
 }
+
+variable "alertmanager_enabled" {
+  description = "Habilitar ou desabilitar o Alertmanager"
+  type        = bool
+  default     = false
+}

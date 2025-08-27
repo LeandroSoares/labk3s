@@ -44,6 +44,7 @@ module "observability" {
   expose_grafana           = var.expose_grafana
   grafana_nodeport         = var.grafana_nodeport
   optimize_resources       = var.optimize_resources
+  alertmanager_enabled     = var.alertmanager_enabled
   
   # Valores personalizados para o Prometheus Stack
   prometheus_stack_values = {
@@ -100,9 +101,27 @@ resource "kubernetes_ingress_v1" "observability_ingress" {
         }
       }
     }
+    
+    rule {
+      host = "alertmanager.labk3s.online"
+      http {
+        path {
+          path      = "/"
+          path_type = "Prefix"
+          backend {
+            service {
+              name = "prom-stack-kube-prometheus-alertmanager"
+              port {
+                number = 9093
+              }
+            }
+          }
+        }
+      }
+    }
 
     tls {
-      hosts = ["grafana.labk3s.online", "prometheus.labk3s.online"]
+      hosts = ["grafana.labk3s.online", "prometheus.labk3s.online", "alertmanager.labk3s.online"]
       secret_name = "observability-tls"
     }
   }

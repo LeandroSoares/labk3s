@@ -66,3 +66,9 @@ variable "create_ingress" {
   type        = bool
   default     = false
 }
+
+variable "alertmanager_enabled" {
+  description = "Habilitar ou desabilitar o Alertmanager"
+  type        = bool
+  default     = false
+}

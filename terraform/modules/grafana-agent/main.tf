@@ -40,16 +40,12 @@ resource "helm_release" "grafana_agent" {
       configMap:
         create: true
         content: |
-          server:
-            log_level: ${var.log_level}
-            http_listen_port: 12345
-
           metrics:
-            wal_directory: /tmp/wal
             global:
               scrape_interval: 15s
               external_labels:
                 cluster: k3s-lab
+            wal_directory: /tmp/wal
             configs:
               - name: k3s-metrics
                 remote_write:
@@ -92,8 +88,6 @@ resource "helm_release" "grafana_agent" {
                 filename: /tmp/positions.yaml
               clients:
                 - url: http://prom-stack-grafana.${local.namespace}.svc.cluster.local:3100/loki/api/v1/push
-              target_config:
-                sync_period: ${var.optimize_resources ? "30s" : "10s"}
               scrape_configs:
                 - job_name: kubernetes-pods
                   kubernetes_sd_configs:
@@ -134,15 +128,6 @@ resource "helm_release" "grafana_agent" {
               remote_write:
                 - endpoint: ${var.tempo_endpoint}
                   insecure: true
-              batch:
-                timeout: 5s
-                send_batch_size: ${var.optimize_resources ? "100" : "1000"}
-              automatic_logging:
-                backend: logs_instance
-                logs_instance_name: k3s-logs
-                roots: true
-                processes: true
-                spans: ${var.optimize_resources ? "false" : "true"}
               service_graphs:
                 enabled: true
 

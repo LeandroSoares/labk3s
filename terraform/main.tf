@@ -61,18 +61,18 @@ module "tempo" {
 }
 
 # Módulo do Grafana Agent para coleta unificada de métricas, logs e traces
-module "grafana_agent" {
-  source = "./modules/grafana-agent"
-  count  = var.grafana_agent_enabled ? 1 : 0
+# module "grafana_agent" {
+#   source = "./modules/grafana-agent"
+#   count  = var.grafana_agent_enabled ? 1 : 0
 
-  namespace                = var.namespace
-  use_existing_namespace   = true  # Usar o namespace criado pelo módulo de observabilidade
-  agent_version            = var.grafana_agent_version
-  log_level                = var.grafana_agent_log_level
-  optimize_resources       = var.optimize_resources
-  loki_enabled             = false # Será habilitado quando implementarmos o Loki
-  tempo_endpoint           = "tempo:4317"  # Endpoint do serviço Tempo dentro do cluster
-}
+#   namespace                = var.namespace
+#   use_existing_namespace   = true  # Usar o namespace criado pelo módulo de observabilidade
+#   agent_version            = var.grafana_agent_version
+#   log_level                = var.grafana_agent_log_level
+#   optimize_resources       = var.optimize_resources
+#   loki_enabled             = false # Será habilitado quando implementarmos o Loki
+#   tempo_endpoint           = "tempo:4317"  # Endpoint do serviço Tempo dentro do cluster
+# }
 
 # Configurar Ingress para os serviços de observabilidade
 resource "kubernetes_ingress_v1" "observability_ingress" {

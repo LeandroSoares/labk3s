@@ -1,0 +1,28 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: observability
+
+resources:
+  - namespace.yaml
+  - dashboard-provider.yaml
+
+patchesStrategicMerge:
+  - grafana-patch.yaml
+
+configMapGenerator:
+  - name: prom-stack-grafana-dashboards-k3s
+    files:
+      - k3s-cluster-dashboard.json=../../terraform/grafana-dashboards/k3s-cluster-dashboard.json
+    options:
+      labels:
+        grafana_dashboard: "1"
+        dashboard-provider: "k3s"
+
+  - name: prom-stack-grafana-dashboard-alertmanager
+    files:
+      - alertmanager-status.json=../../terraform/grafana-dashboards/alertmanager-status.json
+    options:
+      labels:
+        grafana_dashboard: "1"
+        dashboard-provider: "alertmanager"

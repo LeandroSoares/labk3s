@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prom-stack-grafana
+  namespace: observability
+spec:
+  template:
+    spec:
+      volumes:
+        - name: dashboards-k3s
+          configMap:
+            name: prom-stack-grafana-dashboards-k3s
+        - name: dashboards-alertmanager
+          configMap:
+            name: prom-stack-grafana-dashboard-alertmanager
+        - name: dashboard-provider
+          configMap:
+            name: prom-stack-grafana-dashboard-provider
+      containers:
+        - name: grafana
+          volumeMounts:
+            - name: dashboards-k3s
+              mountPath: /var/lib/grafana/dashboards/k3s
+            - name: dashboards-alertmanager
+              mountPath: /var/lib/grafana/dashboards/alertmanager
+            - name: dashboard-provider
+              mountPath: /etc/grafana/provisioning/dashboards/custom-dashboards.yaml
+              subPath: dashboards.yaml

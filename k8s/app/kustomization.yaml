@@ -6,6 +6,6 @@ resources:
 - backend.yaml
 - frontend.yaml
 - ingress.yaml
-- frontend-nodeport.yaml
 - api-route.yaml
+- network-policies.yaml
 

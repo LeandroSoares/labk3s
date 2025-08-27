@@ -6,6 +6,15 @@ metadata:
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
     traefik.ingress.kubernetes.io/router.middlewares: joke-app-api-strip@kubernetescrd
+    # Anotações de segurança adicionadas
+    traefik.ingress.kubernetes.io/ssl-redirect: "true"
+    traefik.ingress.kubernetes.io/ssl-permanent-redirect: "true"
+    # Definindo rate limit para evitar abuso da API
+    traefik.ingress.kubernetes.io/rate-limit: |
+      {
+        "average": 100,
+        "burst": 50
+      }
 spec:
   ingressClassName: traefik
   tls:

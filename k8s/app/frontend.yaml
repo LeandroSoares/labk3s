@@ -25,7 +25,7 @@ spec:
         command: ['sh', '-c', 'nslookup grafana-agent.observability.svc.cluster.local || echo "Grafana Agent not found, continuing anyway"; exit 0']
       containers:
       - name: frontend
-        image: ${DOCKER_USERNAME}/joke-frontend:${VERSION}
+        image: leandrogamedesigner/joke-frontend:latest
         ports:
         - containerPort: 80
         resources:
@@ -72,60 +72,49 @@ metadata:
 data:
   nginx.conf: |
     server {
-        listen 80;
-        server_name _;
+      listen 80;
+      server_name _;
 
-        root /usr/share/nginx/html;
-        index index.html;
+      root /usr/share/nginx/html;
+      index index.html;
 
-        # Configuração para o frontend
-        location / {
-            try_files $uri $uri/ /index.html;
-        }
+      # Configuração para o frontend
+      location / {
+        try_files $uri $uri/ /index.html;
+      }
 
-        # Proxy para o backend
-        location /api/ {
-            # Define o nome do serviço de forma estática
-            set $backend_service "backend-service.joke-app.svc.cluster.local";
-            proxy_pass http://$backend_service:3000/;
-            proxy_http_version 1.1;
-            proxy_set_header Upgrade $http_upgrade;
-            proxy_set_header Connection 'upgrade';
-            proxy_set_header Host $host;
-            proxy_cache_bypass $http_upgrade;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            
-            # Configurações de timeout para evitar falhas rápidas
-            proxy_connect_timeout 5s;
-            proxy_send_timeout 10s;
-            proxy_read_timeout 10s;
-            
-            # Preservar cabeçalhos de tracing
-            proxy_pass_header X-Trace-ID;
-        }
-        
-        # Endpoint para telemetria frontend
-        location /telemetry {
-            # Desabilitado temporariamente - retorna 200 OK para não bloquear a aplicação
-            return 200 '{"status":"ok","message":"telemetry disabled temporarily"}';
-            add_header Content-Type application/json;
-            
-            # Código original comentado
-            # proxy_pass http://grafana-agent.observability.svc.cluster.local:4318/v1/traces;
-            # proxy_http_version 1.1;
-            # proxy_set_header Host $host;
-            # proxy_set_header Content-Type "application/json";
-            # proxy_intercept_errors on;
-            # error_page 500 502 503 504 = @fallback;
-        }
-        
-        # Fallback para quando o Grafana Agent não estiver disponível
-        location @fallback {
-            # Apenas retorna 200 OK para não bloquear a aplicação
-            return 200 '{"status":"ok","message":"telemetry fallback"}';
-            add_header Content-Type application/json;
-        }
+      # Proxy para o backend
+      location /api/ {
+        set $backend_service "backend-service.joke-app.svc.cluster.local";
+        proxy_pass http://$backend_service:3000/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_connect_timeout 5s;
+        proxy_send_timeout 10s;
+        proxy_read_timeout 10s;
+        proxy_pass_header X-Trace-ID;
+      }
+
+      # Endpoint para telemetria frontend
+      location /telemetry {
+        proxy_pass http://grafana-agent.observability.svc.cluster.local:4318/v1/traces;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header Content-Type "application/json";
+        proxy_intercept_errors on;
+        error_page 500 502 503 504 = @fallback;
+      }
+
+      # Fallback para quando o Grafana Agent não estiver disponível
+      location @fallback {
+        return 200 '{"status":"ok","message":"telemetry fallback"}';
+        add_header Content-Type application/json;
+      }
     }
 ---
 apiVersion: v1

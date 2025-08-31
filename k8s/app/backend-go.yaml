@@ -6,7 +6,7 @@ metadata:
   labels:
     app: backend-go
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: backend-go
@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
       - name: backend-go
-        image: ${DOCKER_USERNAME}/joke-backend-go:${VERSION}
+        image: leandrogamedesigner/joke-backend-go:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 3000
@@ -51,7 +51,7 @@ spec:
         - name: OTEL_SERVICE_NAME
           value: "joke-api-go"
         - name: OTEL_EXPORTER_OTLP_ENDPOINT
-          value: "http://grafana-agent.observability.svc.cluster.local:4318"
+          value: "grafana-agent.observability.svc.cluster.local:4318"
         volumeMounts:
         - name: data
           mountPath: /data

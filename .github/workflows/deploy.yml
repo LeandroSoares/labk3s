@@ -2,7 +2,7 @@ name: Deploy to Kubernetes
 
 on:
   workflow_run:
-    workflows: ["Build Frontend", "Build Backend"]
+    workflows: ["Build Frontend", "Build Backend Go"]
     types:
       - completed
     branches: [main]
@@ -49,8 +49,8 @@ jobs:
           sed -i "s|\${VERSION}|${{ env.VERSION }}|g" ./k8s/app/frontend.yaml
           sed -i "s|\${DOCKER_USERNAME}|${{ secrets.DOCKERHUB_USERNAME }}|g" ./k8s/app/frontend-with-tracing.yaml
           sed -i "s|\${VERSION}|${{ env.VERSION }}|g" ./k8s/app/frontend-with-tracing.yaml
-          sed -i "s|\${DOCKER_USERNAME}|${{ secrets.DOCKERHUB_USERNAME }}|g" ./k8s/app/backend.yaml
-          sed -i "s|\${VERSION}|${{ env.VERSION }}|g" ./k8s/app/backend.yaml
+          sed -i "s|\${DOCKER_USERNAME}|${{ secrets.DOCKERHUB_USERNAME }}|g" ./k8s/app/backend-go.yaml
+          sed -i "s|\${VERSION}|${{ env.VERSION }}|g" ./k8s/app/backend-go.yaml
        
       - name: Deploy to Kubernetes
         run: |
@@ -63,7 +63,7 @@ jobs:
           
           # Verificar status do deployment
           echo "Aguardando deployments..."
-          kubectl rollout status deployment/backend -n joke-app --timeout=180s
+          kubectl rollout status deployment/backend-go -n joke-app --timeout=180s
           kubectl rollout status deployment/frontend -n joke-app --timeout=180s
           
           echo "Aplicação implantada com sucesso em www.labk3s.online"

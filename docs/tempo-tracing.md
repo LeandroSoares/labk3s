@@ -42,22 +42,56 @@ Visualização no Grafana
 
 ## Instrumentação de aplicações
 
-### Node.js
+### Go
 
-```javascript
+```go
 // Instale as dependências:
-// npm install @opentelemetry/sdk-node @opentelemetry/auto-instrumentations-node @opentelemetry/exporter-trace-otlp-http
+// go get go.opentelemetry.io/otel go.opentelemetry.io/otel/sdk go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp
 
-// tracing.js
-const { NodeSDK } = require('@opentelemetry/sdk-node');
-const { getNodeAutoInstrumentations } = require('@opentelemetry/auto-instrumentations-node');
-const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-http');
+package main
 
-const sdk = new NodeSDK({
-  traceExporter: new OTLPTraceExporter({
-    url: 'http://otel-collector-opentelemetry-collector.observability.svc.cluster.local:4318/v1/traces'
-  }),
-  instrumentations: [getNodeAutoInstrumentations()]
+import (
+	"context"
+	"log"
+	"time"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
+)
+
+func initTracer() func() {
+	exporter, err := otlptracehttp.New(context.Background(),
+		otlptracehttp.WithEndpoint("otel-collector-opentelemetry-collector.observability.svc.cluster.local:4318"),
+		otlptracehttp.WithURLPath("/v1/traces"),
+		otlptracehttp.WithInsecure(),
+	)
+	if err != nil {
+		log.Fatalf("Failed to create exporter: %v", err)
+	}
+
+	resources := resource.NewWithAttributes(
+		semconv.SchemaURL,
+		semconv.ServiceNameKey.String("joke-api"),
+		semconv.ServiceVersionKey.String("1.0.0"),
+	)
+
+	provider := sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(exporter),
+		sdktrace.WithResource(resources),
+	)
+	otel.SetTracerProvider(provider)
+
+	return func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := provider.Shutdown(ctx); err != nil {
+			log.Fatalf("Failed to shutdown provider: %v", err)
+		}
+	}
+}
 });
 
 sdk.start();

@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-go
+  namespace: joke-app
+  labels:
+    app: backend-go
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend-go
+  template:
+    metadata:
+      labels:
+        app: backend-go
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3000"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: backend-go
+        image: ${DOCKER_USERNAME}/joke-backend-go:${VERSION}
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+          name: http
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "256Mi"
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        env:
+        - name: PORT
+          value: "3000"
+        - name: OTEL_SERVICE_NAME
+          value: "joke-api-go"
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "http://grafana-agent.observability.svc.cluster.local:4318"
+        volumeMounts:
+        - name: data
+          mountPath: /data
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: backend-go-data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: backend-go-data
+  namespace: joke-app
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-go
+  namespace: joke-app
+  labels:
+    app: backend-go
+spec:
+  ports:
+  - port: 80
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  selector:
+    app: backend-go

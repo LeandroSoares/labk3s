@@ -24,39 +24,39 @@ Erro específico:
   - Aprimorada a configuração do proxy para o backend com timeouts adequados
   - Utilização de variáveis para o serviço de backend para melhor resolução de nomes
 
-### 2. Backend (k8s/app/backend.yaml)
+### 2. Backend (k8s/app/backend-go.yaml)
 
 - **Adição de Probes**:
   - Configuradas readiness e liveness probes para o container do backend
   - Isso ajuda o Kubernetes a monitorar a saúde do serviço e reiniciá-lo se necessário
 
-### 3. Código Backend (src/backend/server.js)
+### 3. Código Backend (src/backend-go/main.go)
 
 - **Adição de Endpoint de Health Check**:
-  - Implementado um novo endpoint `/health` que verifica:
+  - Implementado um endpoint `/health` que verifica:
     - Conectividade com o banco de dados
     - Status geral da aplicação
   - Este endpoint é utilizado pelas probes do Kubernetes
 
 ## Como Aplicar as Alterações
 
-1. **Reconstruir a Imagem do Backend**:
+1. **Reconstruir a Imagem do Backend Go**:
    ```bash
-   cd src/backend
-   docker build -t <DOCKER_USERNAME>/joke-backend:<VERSION> .
-   docker push <DOCKER_USERNAME>/joke-backend:<VERSION>
+   cd src/backend-go
+   docker build -t <DOCKER_USERNAME>/joke-backend-go:<VERSION> .
+   docker push <DOCKER_USERNAME>/joke-backend-go:<VERSION>
    ```
 
 2. **Aplicar os Manifestos no Kubernetes**:
    ```bash
-   kubectl apply -f k8s/app/backend.yaml -f k8s/app/frontend.yaml
+   kubectl apply -f k8s/app/backend-go.yaml -f k8s/app/frontend.yaml
    ```
 
 3. **Verificar a Implantação**:
    ```bash
    kubectl get pods -n joke-app
    kubectl describe pod -n joke-app -l app=frontend
-   kubectl describe pod -n joke-app -l app=backend
+   kubectl describe pod -n joke-app -l app=backend-go
    ```
 
 ## Benefícios das Alterações

@@ -3,7 +3,7 @@ kind: Kustomization
 
 resources:
 - namespace.yaml
-- backend.yaml
+- backend-go.yaml  # Nova versão do backend em Go
 - frontend.yaml  # Usando a versão sem telemetria
 - ingress.yaml
 - api-route.yaml

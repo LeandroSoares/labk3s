@@ -13,9 +13,9 @@ A solução de tracing implementada consiste em:
 ## Arquitetura
 
 ```
-Backend (Node.js + OpenTelemetry) ────┐
-                                     │
-                                     ▼
+Backend (Go + OpenTelemetry) ────┐
+                                 │
+                                 ▼
 Frontend (JS + OpenTelemetry) ────► Grafana Agent ────► Grafana Tempo ────► Visualização no Grafana
 ```
 
@@ -32,7 +32,7 @@ A implementação de tracing está integrada diretamente nos manifestos da aplic
 ```
 k8s/
   app/
-    backend.yaml          # Configurado com variáveis para Grafana Agent
+    backend-go.yaml       # Configurado com variáveis para Grafana Agent
     frontend.yaml         # Configurado com ConfigMap para Nginx
     network-policies.yaml # Inclui políticas para comunicação com Grafana Agent
 ```
@@ -45,19 +45,29 @@ kubectl apply -k k8s/app
 
 ## Instrumentação das Aplicações
 
-### Backend (Node.js)
+### Backend (Go)
 
-O backend já está instrumentado com OpenTelemetry em `src/backend/tracing.js`. Todos os endpoints do Express e chamadas HTTP são automaticamente rastreados.
+O backend em Go está instrumentado com OpenTelemetry. O framework Gin e chamadas HTTP são automaticamente rastreados.
 
-Exemplo de uso manual para criar spans personalizados:
+Exemplo de uso para criar spans personalizados em Go:
 
-```javascript
-const { trace } = require('@opentelemetry/api');
+```go
+import (
+    "go.opentelemetry.io/otel"
+    "go.opentelemetry.io/otel/trace"
+    "context"
+)
 
 // Obtenha um tracer
-const tracer = trace.getTracer('joke-api');
+tracer := otel.Tracer("joke-api")
 
 // Criar um span personalizado
+ctx, span := tracer.Start(context.Background(), "operacao-personalizada")
+defer span.End()
+
+// Adicionar atributos ao span
+span.SetAttributes(attribute.String("chave", "valor"))
+```
 const span = tracer.startSpan('operacao-personalizada');
 try {
   // Lógica da operação

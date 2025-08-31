@@ -29,9 +29,9 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: backend-service
+            name: backend-go
             port:
-              number: 3000
+              number: 80
 ---
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware

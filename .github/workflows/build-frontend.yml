@@ -37,14 +37,14 @@ jobs:
         id: cache-node-modules
         with:
           path: ./src/frontend/node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('./src/frontend/package.json') }}
+          key: ${{ runner.os }}-node-${{ hashFiles('./src/frontend/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-
 
       - name: Install dependencies and build CSS
         working-directory: ./src/frontend
         run: |
-          npm install
+          npm ci
           npx tailwindcss -i ./src/input.css -o ./dist/output.css --minify
 
       - name: Set up Docker Buildx

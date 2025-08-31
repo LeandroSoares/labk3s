@@ -11,8 +11,9 @@ Foram corrigidas várias vulnerabilidades de segurança no backend Go do projeto
 ### Vulnerabilidades Altas:
 1. **database/sql**: Condição de corrida em Postgres Scan
 2. **encoding/gob**: Risco de panic devido a estouro de pilha com estruturas profundamente aninhadas
-3. **golang-protobuf**: Loop infinito em protojson.Unmarshal
+3. **golang-protobuf**: Loop infinito em protojson.Unmarshal quando unmarshal de certos formatos JSON inválidos
 4. **golang.org/x/crypto/ssh**: Denial of Service no Key Exchange
+5. **cross-spawn**: Vulnerabilidade de negação de serviço baseada em expressão regular (frontend)
 
 ### Vulnerabilidades Médias:
 1. **net/http**: Cabeçalhos sensíveis não limpos em redirecionamentos entre origens
@@ -25,8 +26,7 @@ Foram corrigidas várias vulnerabilidades de segurança no backend Go do projeto
 
 ## Dependências Atualizadas
 
-As seguintes dependências foram atualizadas para suas versões mais recentes:
-
+### Backend Go:
 - Go: 1.23.0 → 1.24.0
 - golang.org/x/crypto: v0.21.0 → v0.41.0
 - golang.org/x/net: v0.42.0 → v0.43.0
@@ -36,6 +36,10 @@ As seguintes dependências foram atualizadas para suas versões mais recentes:
 - github.com/mattn/go-sqlite3: v1.14.22 → v1.14.32
 - github.com/prometheus/client_golang: v1.19.0 → v1.23.0
 - go.opentelemetry.io/otel: v1.24.0 → v1.38.0
+
+### Frontend JavaScript:
+- cross-spawn: atualizado para a versão mais recente
+- brace-expansion: atualizado para a versão mais recente
 
 ## Próximos Passos
 
@@ -47,6 +51,8 @@ As seguintes dependências foram atualizadas para suas versões mais recentes:
 
 Estas atualizações não afetam a funcionalidade do aplicativo, mas melhoram significativamente sua postura de segurança.
 
----
+## Observações Adicionais
 
-*Nota: As vulnerabilidades de biblioteca "cross-spawn" e "brace-expansion" estão relacionadas a dependências JavaScript e não ao backend Go. Elas devem ser tratadas em uma atualização separada do frontend.*
+- A vulnerabilidade de baixa gravidade **brace-expansion** no frontend foi corrigida atualizando a dependência para a versão mais recente.
+- As vulnerabilidades do frontend (cross-spawn e brace-expansion) são dependências transitivas que não aparecem diretamente no package.json, mas foram atualizadas explicitamente.
+- O pacote **protobuf** foi mantido na versão 1.36.8, que é a mais recente disponível e contém as correções para a vulnerabilidade reportada.

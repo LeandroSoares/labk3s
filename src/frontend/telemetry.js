@@ -1,11 +1,7 @@
 // telemetry.js - Configuração do OpenTelemetry para o frontend
-// Implementação via Web Tracing (a ser carregada antes do script principal)
 
-// Configuração da API do OpenTelemetry para navegador
-const tracingScript = document.createElement('script');
-tracingScript.type = 'text/javascript';
-tracingScript.innerHTML = `
-(function () {
+// Definir a API de telemetria diretamente no escopo global
+(function() {
   // Detecta se o navegador suporta a API de Tracing
   if (!window.PerformanceObserver || !window.PerformanceEntry || !window.PerformanceResourceTiming) {
     console.warn('Este navegador não suporta a API de Performance Timing.');
@@ -99,7 +95,3 @@ tracingScript.innerHTML = `
   
   console.log('Telemetria inicializada no frontend');
 })();
-`;
-
-// Inserir o script no topo do documento
-document.head.insertBefore(tracingScript, document.head.firstChild);

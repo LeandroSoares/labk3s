@@ -69,8 +69,36 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ secrets.DOCKERHUB_USERNAME }}/joke-frontend:${{ env.VERSION }}
-          format: 'table'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
           exit-code: '0'  # Não falha a pipeline, apenas reporta
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
+
+      # Gerar relatório para o GitHub Summary
+      - name: Generate Trivy Summary Report
+        if: always()
+        run: |
+          echo "## 🔒 Trivy Security Scan - Frontend Image" >> $GITHUB_STEP_SUMMARY
+          echo "Security vulnerabilities found in ${{ secrets.DOCKERHUB_USERNAME }}/joke-frontend:${{ env.VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Executar novamente o Trivy em formato de tabela para o summary
+          trivy image --no-progress --ignore-unfixed --severity HIGH,CRITICAL ${{ secrets.DOCKERHUB_USERNAME }}/joke-frontend:${{ env.VERSION }} | tee trivy-report.txt
+          
+          if [ -s trivy-report.txt ]; then
+            echo "### Vulnerabilidades Encontradas:" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat trivy-report.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ✅ Nenhuma vulnerabilidade crítica encontrada!" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      # Upload do relatório SARIF para o GitHub Security
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'

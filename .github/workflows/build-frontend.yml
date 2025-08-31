@@ -1,0 +1,68 @@
+name: Build Frontend
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/frontend/**'
+      - '.github/workflows/build-frontend.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/frontend/**'
+  # Permite execução manual do workflow
+  workflow_dispatch:
+  # Permite ser chamado por outros workflows
+  workflow_call:
+
+env:
+  VERSION: ${{ github.sha }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: ./src/frontend/package-lock.json
+
+      - name: Install dependencies and build CSS
+        working-directory: ./src/frontend
+        run: |
+          npm ci
+          npx tailwindcss -i ./src/input.css -o ./dist/output.css --minify
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Build and push Frontend
+        uses: docker/build-push-action@v4
+        with:
+          context: ./src/frontend
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/joke-frontend:${{ env.VERSION }},${{ secrets.DOCKERHUB_USERNAME }}/joke-frontend:latest
+          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/joke-frontend:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/joke-frontend:buildcache,mode=max
+          
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ secrets.DOCKERHUB_USERNAME }}/joke-frontend:${{ env.VERSION }}
+          format: 'table'
+          exit-code: '0'  # Não falha a pipeline, apenas reporta
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'

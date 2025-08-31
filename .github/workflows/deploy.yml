@@ -1,0 +1,74 @@
+name: Deploy to Kubernetes
+
+on:
+  workflow_run:
+    workflows: ["Build Frontend", "Build Backend"]
+    types:
+      - completed
+    branches: [main]
+  # Permite execução manual do workflow
+  workflow_dispatch:
+  # Permite ser chamado por outros workflows
+  workflow_call:
+
+env:
+  VERSION: ${{ github.sha }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+          
+          # Verificar se consegue conectar ao cluster (diagnóstico)
+          echo "Verificando conexão com o cluster..."
+          kubectl cluster-info
+
+      - name: Setup Kustomize
+        uses: imranismail/setup-kustomize@v1
+      
+      - name: Update Kubernetes manifests
+        run: |
+          # Substitui as variáveis nos arquivos YAML
+          sed -i "s|\${DOCKER_USERNAME}|${{ secrets.DOCKERHUB_USERNAME }}|g" ./k8s/app/frontend.yaml
+          sed -i "s|\${VERSION}|${{ env.VERSION }}|g" ./k8s/app/frontend.yaml
+          sed -i "s|\${DOCKER_USERNAME}|${{ secrets.DOCKERHUB_USERNAME }}|g" ./k8s/app/frontend-with-tracing.yaml
+          sed -i "s|\${VERSION}|${{ env.VERSION }}|g" ./k8s/app/frontend-with-tracing.yaml
+          sed -i "s|\${DOCKER_USERNAME}|${{ secrets.DOCKERHUB_USERNAME }}|g" ./k8s/app/backend.yaml
+          sed -i "s|\${VERSION}|${{ env.VERSION }}|g" ./k8s/app/backend.yaml
+       
+      - name: Deploy to Kubernetes
+        run: |
+          # Exibir os arquivos que serão aplicados
+          echo "Arquivos a serem aplicados:"
+          ls -la k8s/app/
+          
+          # Aplicar todos os recursos usando kustomize
+          kubectl apply -k k8s/app/ --validate=true
+          
+          # Verificar status do deployment
+          echo "Aguardando deployments..."
+          kubectl rollout status deployment/backend -n joke-app --timeout=180s
+          kubectl rollout status deployment/frontend -n joke-app --timeout=180s
+          
+          echo "Aplicação implantada com sucesso em www.labk3s.online"
+          
+          # Mostrar informações sobre os deployments
+          echo "Informações dos deployments:"
+          kubectl get deployments -n joke-app
+          kubectl get pods -n joke-app

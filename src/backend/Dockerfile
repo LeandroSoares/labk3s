@@ -11,8 +11,9 @@ RUN apk add --no-cache dumb-init
 # Copiar arquivos de projeto e instalar dependências
 COPY --chown=node:node package*.json ./
 RUN npm install --production && \
-    # Atualizar explicitamente o cross-spawn para resolver a vulnerabilidade CVE-2024-21538
+    # Atualizar explicitamente pacotes vulneráveis
     npm install cross-spawn@7.0.5 --save-exact && \
+    npm install brace-expansion@2.0.2 --save-exact && \
     npm cache clean --force
 
 # Copiar código da aplicação

@@ -30,8 +30,16 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: ./src/frontend/package-lock.json
+
+      # Cache npm dependencies
+      - name: Cache Node Modules
+        uses: actions/cache@v3
+        id: cache-node-modules
+        with:
+          path: ./src/frontend/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('./src/frontend/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
 
       - name: Install dependencies and build CSS
         working-directory: ./src/frontend

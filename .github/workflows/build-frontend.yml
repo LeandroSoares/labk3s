@@ -44,7 +44,7 @@ jobs:
       - name: Install dependencies and build CSS
         working-directory: ./src/frontend
         run: |
-          npm ci
+          npm install
           npx tailwindcss -i ./src/input.css -o ./dist/output.css --minify
 
       - name: Set up Docker Buildx

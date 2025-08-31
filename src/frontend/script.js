@@ -4,6 +4,11 @@ async function fetchJoke() {
     document.getElementById("joke-text").textContent = "Carregando piada...";
     console.log("Tentando buscar piada em /api/jokes/random");
     
+    // Iniciar o span de telemetria para rastrear a requisição
+    const span = window.telemetry ? window.telemetry.startSpan('fetch_joke', { 
+      operation: 'fetch_random_joke' 
+    }) : null;
+    
     const response = await fetch("/api/jokes/random", {
       headers: {
         'X-Trace-ID': `frontend-${Date.now()}`
@@ -33,10 +38,21 @@ async function fetchJoke() {
     const data = await response.json();
     document.getElementById("joke-text").textContent =
       data.text || "Sem piadas hoje...";
+      
+    // Finalizar o span de telemetria
+    if (span) {
+      window.telemetry.endSpan(span);
+    }
   } catch (error) {
     console.error("Erro ao buscar piada:", error);
     document.getElementById("joke-text").textContent =
       "Erro ao carregar piada. Tente novamente.";
+      
+    // Finalizar o span em caso de erro
+    if (span) {
+      window.telemetry.addEvent(span, 'error', { message: error.message });
+      window.telemetry.endSpan(span);
+    }
   }
 }
 

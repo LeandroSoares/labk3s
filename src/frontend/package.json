@@ -1,0 +1,15 @@
+{
+  "name": "labk3s-frontend",
+  "version": "1.0.0",
+  "description": "Frontend para o laboratório K3s",
+  "main": "index.js",
+  "scripts": {
+    "build:css": "tailwindcss -i ./src/input.css -o ./dist/output.css --minify",
+    "watch:css": "tailwindcss -i ./src/input.css -o ./dist/output.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.3.5",
+    "autoprefixer": "^10.4.15",
+    "postcss": "^8.4.29"
+  }
+}

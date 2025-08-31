@@ -3,11 +3,11 @@ package main
 import (
 	"context"
 	"os"
+	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/sdk/metric/aggregation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
@@ -27,9 +27,25 @@ var (
 
 // initMeter configura o OpenTelemetry Metrics
 func initMeter() (*sdkmetric.MeterProvider, error) {
+	// Verificar se as métricas estão desativadas para desenvolvimento local
+	if os.Getenv("DISABLE_METRICS") == "true" {
+		// Criar um provider vazio para evitar erros
+		mp := sdkmetric.NewMeterProvider()
+		meter = mp.Meter("joke-api")
+		
+		// Inicializar métricas vazias (noop)
+		httpRequestsTotal, _ = meter.Int64Counter("http.requests.total")
+		httpRequestDuration, _ = meter.Float64Histogram("http.request.duration")
+		databaseQueriesTotal, _ = meter.Int64Counter("database.queries.total")
+		activeRequests, _ = meter.Int64UpDownCounter("http.active_requests")
+		jokesCount, _ = meter.Int64Counter("jokes.count")
+		
+		return mp, nil
+	}
+
 	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
 	if endpoint == "" {
-		endpoint = "http://grafana-agent:4318"
+		endpoint = "grafana-agent:4318" // Removido o prefixo http:// pois ele é adicionado automaticamente
 	}
 
 	exporter, err := otlpmetrichttp.New(
@@ -55,21 +71,10 @@ func initMeter() (*sdkmetric.MeterProvider, error) {
 		attribute.String("environment", os.Getenv("GO_ENV")),
 	)
 
-	// Configurar view para histogramas com buckets personalizados para latência
-	histogramView := sdkmetric.NewView(
-		sdkmetric.Instrument{Name: "http.request.duration"},
-		sdkmetric.Stream{
-			Aggregation: aggregation.ExplicitBucketHistogram{
-				Boundaries: []float64{1, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
-			},
-		},
-	)
-
 	// Criar e configurar o provider
 	mp := sdkmetric.NewMeterProvider(
-		sdkmetric.WithReader(sdkmetric.NewPeriodicReader(exporter, sdkmetric.WithInterval(15000000000))), // 15 segundos
+		sdkmetric.WithReader(sdkmetric.NewPeriodicReader(exporter, sdkmetric.WithInterval(15*time.Second))),
 		sdkmetric.WithResource(r),
-		sdkmetric.WithView(histogramView),
 	)
 
 	// Configurar o meter

@@ -1,13 +1,13 @@
 FROM golang:1.21-alpine AS builder
 
 # Instalar dependências de compilação
-RUN apk add --no-cache git
+RUN apk add --no-cache gcc git musl-dev
 
 # Configurar diretório de trabalho
 WORKDIR /app
 
 # Copiar os arquivos go.mod e go.sum
-COPY go.mod ./
+COPY go.mod go.sum ./
 
 # Baixar dependências
 RUN go mod download
@@ -19,16 +19,13 @@ COPY . .
 RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -ldflags "-s -w" -o joke-api .
 
 # Segunda etapa de compilação para uma imagem mais limpa
-FROM alpine:latest
+FROM alpine:3.22
 
-# Instalar dependências de runtime
-RUN apk --no-cache add ca-certificates tzdata sqlite
-
-# Criar diretório para o banco de dados e configurar permissões
-RUN mkdir -p /data && chmod 755 /data
-
-# Criar usuário não-root
-RUN adduser -D -g '' appuser && \
+# Instalar dependências de runtime, criar diretório para o banco de dados, configurar permissões e criar usuário não-root
+RUN apk --no-cache add ca-certificates sqlite tzdata && \
+    mkdir -p /data && \
+    chmod 755 /data && \
+    adduser -D -g '' appuser && \
     chown -R appuser:appuser /data
 
 # Configurar diretório de trabalho

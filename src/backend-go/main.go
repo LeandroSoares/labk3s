@@ -385,10 +385,13 @@ func healthCheck(c *gin.Context) {
 }
 
 func main() {
+	log.Println("Iniciando o aplicativo...")
+
 	// Inicializar o sistema de métricas
 	prometheus.MustRegister(jokeRequestCount)
 
 	// Inicializar o tracer
+	log.Println("Configurando tracer...")
 	tp, err := initTracer()
 	if err != nil {
 		log.Fatalf("Erro ao inicializar tracer: %v", err)
@@ -400,6 +403,7 @@ func main() {
 	}()
 	
 	// Inicializar o meter para métricas
+	log.Println("Configurando metrics...")
 	mp, err := initMeter()
 	if err != nil {
 		log.Fatalf("Erro ao inicializar meter: %v", err)
@@ -411,6 +415,7 @@ func main() {
 	}()
 
 	// Inicializar banco de dados
+	log.Println("Configurando banco de dados...")
 	if err := setupDatabase(); err != nil {
 		log.Fatalf("Erro ao configurar banco de dados: %v", err)
 	}
@@ -420,6 +425,7 @@ func main() {
 	rand.Seed(time.Now().UnixNano())
 
 	// Configurar servidor HTTP
+	log.Println("Configurando rotas...")
 	r := setupRoutes()
 
 	// Configurar porta

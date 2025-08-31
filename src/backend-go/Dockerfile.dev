@@ -1,0 +1,23 @@
+FROM golang:1.21-alpine
+
+WORKDIR /app
+
+# Copiar go.mod e go.sum
+COPY go.mod go.sum ./
+
+# Instalar dependências
+RUN go mod download
+
+# Copiar o código fonte
+COPY . .
+
+# Definir variáveis de ambiente
+ENV CGO_ENABLED=0
+ENV DISABLE_METRICS=true
+ENV PORT=3000
+
+# Expor porta
+EXPOSE 3000
+
+# Comando para iniciar o aplicativo
+CMD ["go", "run", "."]
